@@ -1,0 +1,2021 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>משמרות – ניהול שכר</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --green: #22c55e;
+    --green-dark: #16a34a;
+    --green-light: #dcfce7;
+    --green-mid: #4ade80;
+    --red: #ef4444;
+    --red-light: #fee2e2;
+    --orange: #f97316;
+    --bg: #f0fdf4;
+    --bg2: #ffffff;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --shadow: 0 2px 12px rgba(0,0,0,0.07);
+    --shadow-lg: 0 8px 32px rgba(34,197,94,0.15);
+    --radius: 18px;
+    --radius-sm: 10px;
+    --nav-h: 70px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-bottom: var(--nav-h);
+    overflow-x: hidden;
+  }
+
+  /* ===== NAV ===== */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--nav-h);
+    background: #fff;
+    border-top: 1px solid var(--border);
+    display: flex;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.06);
+    z-index: 100;
+  }
+  .nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: all .2s;
+    color: var(--text3);
+    font-size: 10px;
+    font-weight: 500;
+    border: none;
+    background: none;
+    padding: 0;
+  }
+  .nav-item.active { color: var(--green); }
+  .nav-item svg { width: 22px; height: 22px; }
+  .nav-dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--green);
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .nav-item.active .nav-dot { opacity: 1; }
+
+  /* ===== PAGES ===== */
+  .page { display: none; padding: 0 0 12px; min-height: calc(100vh - var(--nav-h)); }
+  .page.active { display: block; }
+
+  /* ===== HEADER ===== */
+  .page-header {
+    padding: 16px 16px 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .page-title { font-size: 22px; font-weight: 800; }
+  .page-sub { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* ===== CARDS ===== */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 18px;
+    margin: 0 16px 14px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 10px;
+  }
+
+  /* ===== DASHBOARD ===== */
+  .profile-bar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 16px 0;
+    margin-bottom: 16px;
+  }
+  .avatar {
+    width: 46px; height: 46px;
+    border-radius: 50%;
+    background: var(--green-light);
+    border: 2px solid var(--green);
+    object-fit: cover;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: var(--green-dark);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .profile-text .name { font-size: 16px; font-weight: 700; }
+  .profile-text .date { font-size: 12px; color: var(--text3); margin-top: 2px; }
+
+  /* Hero Card */
+  .hero-card {
+    margin: 0 16px 14px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, #16a34a 0%, #22c55e 60%, #4ade80 100%);
+    padding: 22px 20px;
+    color: #fff;
+    box-shadow: 0 8px 32px rgba(34,197,94,0.3);
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute;
+    top: -40px; left: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+  }
+  .hero-card::after {
+    content: '';
+    position: absolute;
+    bottom: -60px; right: -20px;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+  }
+  .hero-label { font-size: 11px; opacity: .8; font-weight: 500; letter-spacing: .5px; }
+  .hero-goal { font-size: 13px; color: #ffffff; font-weight: 600; margin-bottom: 6px; }
+  .hero-amount {
+    font-size: 40px;
+    font-weight: 900;
+    line-height: 1;
+    margin-bottom: 4px;
+    position: relative;
+    color: #ffffff;
+  }
+  .hero-amount.red { color: #ffffff; }
+  .hero-amount.green { color: #ffffff; }
+  .hero-over {
+    font-size: 13px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 10px;
+  }
+  .hero-over.red-text { color: #ffffff; }
+  .hero-status-bar {
+    display: flex; align-items: center; gap: 8px;
+    margin-bottom: 10px;
+  }
+  .hero-status-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .hero-status-dot.red { background: rgba(252,165,165,0.9); }
+  .hero-status-dot.green { background: rgba(187,247,208,0.9); }
+    border-radius: 99px;
+    height: 8px;
+    margin-bottom: 10px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: rgba(255,255,255,0.9);
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+    min-width: 4px;
+  }
+  .hero-row {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 6px;
+  }
+  .hero-stat { font-size: 11px; opacity: .8; }
+  .hero-stat b { font-size: 14px; font-weight: 700; display: block; opacity: 1; }
+
+  /* Mini stats grid */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 0 16px 14px;
+  }
+  .mini-card {
+    background: #fff;
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow);
+    padding: 14px;
+  }
+  .mini-card .label { font-size: 10px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: .4px; }
+  .mini-card .val { font-size: 20px; font-weight: 800; margin-top: 4px; color: var(--text); }
+  .mini-card .val.green { color: var(--green-dark); }
+  .mini-card .val.red { color: var(--red); }
+  .mini-card .sub { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+  /* Shifts list */
+  .shift-item {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .15s;
+  }
+  .shift-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .shift-item:first-child { padding-top: 0; }
+  .shift-row1 { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .shift-date { font-size: 13px; font-weight: 700; }
+  .shift-pay { font-size: 15px; font-weight: 800; color: var(--green-dark); }
+  .shift-row2 { font-size: 11px; color: var(--text3); }
+  .shift-detail { font-size: 11px; color: var(--text2); margin-top: 3px; line-height: 1.6; }
+  .shift-detail-hidden { display: none; }
+  .shift-item.expanded .shift-detail-hidden { display: block; }
+
+  /* ===== JOURNAL ===== */
+  .week-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 0 16px 14px;
+    background: #fff;
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+    box-shadow: var(--shadow);
+  }
+  .week-nav button {
+    background: none; border: none; cursor: pointer;
+    color: var(--green-dark); font-size: 20px; padding: 4px 8px;
+    font-weight: 700;
+  }
+  .week-label { font-size: 13px; font-weight: 700; color: var(--text); }
+
+  .day-card {
+    margin: 0 16px 10px;
+    border-radius: var(--radius-sm);
+    background: #fff;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+  .day-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  .day-name { font-size: 14px; font-weight: 700; }
+  .day-date-s { font-size: 11px; color: var(--text3); }
+  .day-right { display: flex; align-items: center; gap: 10px; }
+  .day-badge {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 99px;
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .day-badge.empty { background: #f1f5f9; color: var(--text3); }
+  .day-shifts { padding: 0 16px 12px; display: none; }
+  .day-card.open .day-shifts { display: block; }
+
+  /* Add shift form */
+  .fab {
+    position: fixed;
+    bottom: calc(var(--nav-h) + 16px);
+    left: 16px;
+    width: 52px; height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    box-shadow: 0 4px 20px rgba(34,197,94,0.4);
+    transition: transform .2s;
+    z-index: 90;
+  }
+  .fab:active { transform: scale(.92); }
+
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 200;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: #fff;
+    border-radius: 24px 24px 0 0;
+    padding: 24px 20px 32px;
+    width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: slideUp .3s ease;
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  .modal-handle {
+    width: 40px; height: 4px;
+    background: var(--border);
+    border-radius: 99px;
+    margin: 0 auto 20px;
+  }
+  .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 20px; }
+
+  /* Form fields */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 6px; }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    padding: 12px 14px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'Heebo', sans-serif;
+    font-size: 15px;
+    color: var(--text);
+    background: #fff;
+    outline: none;
+    transition: border .2s;
+    direction: rtl;
+  }
+  .field input:focus, .field select:focus { border-color: var(--green); }
+  .time-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .time-picker { display: flex; gap: 6px; }
+  .time-picker select {
+    flex: 1;
+    padding: 12px 8px;
+    text-align: center;
+    font-size: 18px;
+    font-weight: 700;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: #f8fafc;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  .time-picker select:focus { border-color: var(--green); }
+  .time-sep { font-size: 22px; font-weight: 700; color: var(--text3); align-self: center; }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border-radius: var(--radius-sm);
+    font-family: 'Heebo', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    border: none;
+    transition: all .2s;
+  }
+  .btn-primary {
+    background: linear-gradient(135deg, #16a34a, #22c55e);
+    color: #fff;
+    box-shadow: 0 4px 14px rgba(34,197,94,0.35);
+  }
+  .btn-primary:active { transform: scale(.97); }
+  .btn-danger { background: var(--red-light); color: var(--red); margin-top: 8px; }
+  .btn-secondary { background: #f1f5f9; color: var(--text2); }
+
+  .calc-preview {
+    background: var(--green-light);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--green-dark);
+    line-height: 1.7;
+  }
+
+  /* ===== STATS ===== */
+  .stats-section { margin: 0 16px 14px; }
+  .stats-section-title {
+    font-size: 13px; font-weight: 700;
+    color: var(--text2);
+    margin-bottom: 10px;
+    padding-right: 4px;
+  }
+  .stat-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .key { color: var(--text2); }
+  .stat-row .val { font-weight: 700; }
+
+  /* Chart */
+  .chart-wrap {
+    padding: 8px 0;
+    overflow-x: auto;
+  }
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+    min-height: 110px;
+    padding: 8px 4px 0;
+  }
+  .bar-col {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    min-width: 34px;
+  }
+  .bar-fill {
+    width: 100%;
+    border-radius: 6px 6px 0 0;
+    background: linear-gradient(to top, #16a34a, #4ade80);
+    transition: height .5s cubic-bezier(.4,0,.2,1);
+    min-height: 4px;
+  }
+  .bar-label { font-size: 9px; color: var(--text3); font-weight: 600; }
+  .bar-val { font-size: 9px; color: var(--text2); font-weight: 600; }
+
+  /* ===== GENERATOR ===== */
+  .gen-result-card {
+    margin: 0 16px 12px;
+    border-radius: var(--radius);
+    background: #fff;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color .2s;
+  }
+  .gen-result-card.best { border-color: var(--green); }
+  .gen-header {
+    padding: 14px 16px 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .gen-title { font-size: 14px; font-weight: 800; }
+  .gen-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 99px;
+    background: var(--green-light);
+    color: var(--green-dark);
+  }
+  .gen-body { padding: 0 16px 14px; }
+  .gen-schedule { font-size: 12px; color: var(--text2); line-height: 2; }
+  .gen-stats-row {
+    display: flex; gap: 8px; margin-top: 10px;
+  }
+  .gen-stat-box {
+    flex: 1;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 8px;
+    text-align: center;
+  }
+  .gen-stat-box .g-val { font-size: 15px; font-weight: 800; color: var(--green-dark); }
+  .gen-stat-box .g-lbl { font-size: 9px; color: var(--text3); font-weight: 600; }
+  .gen-diff {
+    font-size: 12px; font-weight: 600;
+    margin-top: 8px; padding: 6px 10px;
+    border-radius: 8px;
+  }
+  .gen-diff.over { background: var(--green-light); color: var(--green-dark); }
+  .gen-diff.under { background: var(--red-light); color: var(--red); }
+  .gen-add-btn {
+    width: calc(100% - 32px);
+    margin: 4px 16px 14px;
+    padding: 11px;
+    border-radius: var(--radius-sm);
+    background: var(--green-light);
+    color: var(--green-dark);
+    border: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif;
+    font-size: 13px; font-weight: 700;
+    transition: all .15s;
+  }
+  .gen-add-btn:active { transform: scale(.97); }
+
+  /* ===== SETTINGS ===== */
+  .settings-section { margin: 0 16px 16px; }
+  .rate-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px;
+  }
+  .rate-row:last-child { border-bottom: none; }
+  .rate-info { flex: 1; }
+  .rate-type { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; }
+  .rate-time { font-weight: 700; }
+  .rate-amount { font-weight: 800; color: var(--green-dark); margin-left: 4px; }
+  .rate-del {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 16px; padding: 4px;
+    transition: color .15s;
+  }
+  .rate-del:hover { color: var(--red); }
+  .rate-edit {
+    background: none; border: none; cursor: pointer;
+    color: var(--text3); font-size: 14px; padding: 4px;
+  }
+
+  /* Toggle */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .toggle-label { font-size: 14px; font-weight: 600; }
+  .toggle {
+    width: 46px; height: 26px;
+    border-radius: 99px;
+    background: var(--border);
+    position: relative; cursor: pointer;
+    transition: background .2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; right: 3px;
+    width: 20px; height: 20px;
+    border-radius: 50%; background: #fff;
+    transition: transform .2s;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+  }
+  .toggle.on::after { transform: translateX(-20px); }
+
+  /* Avatar upload */
+  .avatar-upload {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 0;
+  }
+  .avatar-big {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--green-light);
+    border: 3px solid var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 800; color: var(--green-dark);
+    overflow: hidden; cursor: pointer; flex-shrink: 0;
+  }
+  .avatar-big img { width: 100%; height: 100%; object-fit: cover; }
+  .upload-hint { font-size: 12px; color: var(--text3); }
+  #avatarInput { display: none; }
+
+  /* Section divider */
+  .sec-div {
+    font-size: 11px; font-weight: 700;
+    color: var(--text3); text-transform: uppercase;
+    letter-spacing: .6px;
+    margin: 18px 16px 8px;
+  }
+
+  /* Snackbar */
+  .snackbar {
+    position: fixed;
+    bottom: calc(var(--nav-h) + 12px);
+    left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1e293b;
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 99px;
+    font-size: 13px; font-weight: 600;
+    opacity: 0;
+    transition: all .3s;
+    z-index: 500;
+    white-space: nowrap;
+  }
+  .snackbar.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text3);
+  }
+  .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
+  .empty-state p { font-size: 14px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+</style>
+</head>
+<body>
+
+<!-- PAGES -->
+<div class="page active" id="page-dashboard"></div>
+<div class="page" id="page-journal"></div>
+<div class="page" id="page-stats"></div>
+<div class="page" id="page-generator"></div>
+<div class="page" id="page-settings"></div>
+
+<!-- FAB -->
+<button class="fab" id="fabBtn" title="הוסף משמרת" style="display:none">+</button>
+
+<!-- Add/Edit Shift Modal -->
+<div class="modal-overlay" id="shiftModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="shiftModalTitle">הוספת משמרת</div>
+    <div class="field">
+      <label>תאריך</label>
+      <input type="date" id="shiftDate">
+    </div>
+    <div class="field">
+      <label>שעת התחלה</label>
+      <div class="time-picker">
+        <select id="startH"></select>
+        <span class="time-sep">:</span>
+        <select id="startM"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>שעת סיום</label>
+      <div class="time-picker">
+        <select id="endH"></select>
+        <span class="time-sep">:</span>
+        <select id="endM"></select>
+      </div>
+    </div>
+    <div class="field">
+      <label>הערה (אופציונלי)</label>
+      <input type="text" id="shiftNote" placeholder="למשל: יום עמוס...">
+    </div>
+    <div class="calc-preview" id="shiftPreview">בחר שעות לחישוב אוטומטי</div>
+    <div style="height:12px"></div>
+    <button class="btn btn-primary" id="shiftSaveBtn">שמור משמרת</button>
+    <button class="btn btn-danger" id="shiftDeleteBtn" style="display:none">מחק משמרת</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="closeShiftModal()">ביטול</button>
+  </div>
+</div>
+
+<!-- Rate Modal -->
+<div class="modal-overlay" id="rateModal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">עריכת תעריף</div>
+    <div class="field">
+      <label>סוג יום</label>
+      <select id="rateType">
+        <option value="regular">יום רגיל</option>
+        <option value="friday">שישי / שבת</option>
+        <option value="holiday">חג</option>
+      </select>
+    </div>
+    <div class="time-row">
+      <div class="field">
+        <label>משעה</label>
+        <input type="time" id="rateFrom" value="07:00">
+      </div>
+      <div class="field">
+        <label>עד שעה</label>
+        <input type="time" id="rateTo" value="13:00">
+      </div>
+    </div>
+    <div class="field">
+      <label>שכר לשעה (₪)</label>
+      <input type="number" id="rateAmount" placeholder="65.41" step="0.01">
+    </div>
+    <input type="hidden" id="rateEditIdx" value="-1">
+    <div style="height:12px"></div>
+    <button class="btn btn-primary" onclick="saveRate()">שמור תעריף</button>
+    <button class="btn btn-secondary" style="margin-top:8px" onclick="closeRateModal()">ביטול</button>
+  </div>
+</div>
+
+<!-- Snackbar -->
+<div class="snackbar" id="snackbar"></div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-item active" data-page="dashboard" onclick="switchTab('dashboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+    דשבורד
+    <div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" data-page="journal" onclick="switchTab('journal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+    יומן
+    <div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" data-page="stats" onclick="switchTab('stats')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-4"/></svg>
+    סטטיסטיקות
+    <div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" data-page="generator" onclick="switchTab('generator')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.22 4.22l2.12 2.12M17.66 17.66l2.12 2.12M2 12h3M19 12h3M4.22 19.78l2.12-2.12M17.66 6.34l2.12-2.12"/></svg>
+    מחולל
+    <div class="nav-dot"></div>
+  </button>
+  <button class="nav-item" data-page="settings" onclick="switchTab('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20v-2a8 8 0 0116 0v2"/></svg>
+    פרופיל
+    <div class="nav-dot"></div>
+  </button>
+</nav>
+
+<script>
+// ========== DATA ==========
+const DEFAULT_RATES = [
+  { type:'regular', from:'07:00', to:'13:00', rate:65.41 },
+  { type:'regular', from:'13:00', to:'19:00', rate:70.69 },
+  { type:'regular', from:'19:00', to:'01:00', rate:86.19 },
+  { type:'regular', from:'01:00', to:'07:00', rate:97.16 },
+  { type:'friday',  from:'07:00', to:'13:00', rate:99.07 },
+  { type:'friday',  from:'13:00', to:'19:00', rate:106.04 },
+  { type:'friday',  from:'19:00', to:'01:00', rate:129.29 },
+  { type:'friday',  from:'01:00', to:'07:00', rate:145.74 },
+];
+
+let state = {
+  userName: 'אורח',
+  avatar: '',
+  monthlyGoal: 5000,
+  weeklyHoursGoal: 15,
+  rates: JSON.parse(JSON.stringify(DEFAULT_RATES)),
+  shifts: [],
+  genPrefs: { minWeekHours:15, maxDayHours:6, maxShiftHours:6, maxDayTotalHours:10, includeSat:true, fridayNight:'full', minNightShifts:0, preferredDays:[], weekDaysCount:0, preferredHour:'19:00', allowSplitShift:false }
+};
+
+function save() { try { localStorage.setItem('mishmarot_v2', JSON.stringify(state)); } catch(e){} }
+function load() {
+  try {
+    const d = localStorage.getItem('mishmarot_v2');
+    if (d) {
+      const p = JSON.parse(d);
+      Object.assign(state, p);
+      if (!state.rates?.length) state.rates = JSON.parse(JSON.stringify(DEFAULT_RATES));
+      if (!state.weeklyHoursGoal) state.weeklyHoursGoal = 15;
+      if (!state.genPrefs.maxShiftHours) state.genPrefs.maxShiftHours = state.genPrefs.maxDayHours || 6;
+      if (!state.genPrefs.maxDayTotalHours) state.genPrefs.maxDayTotalHours = 10;
+      if (state.genPrefs.weekDaysCount === undefined) state.genPrefs.weekDaysCount = 0;
+    }
+  } catch(e) {}
+}
+
+// ========== TIME UTILS ==========
+function timeToMins(t) { const [h,m]=t.split(':').map(Number); return h*60+m; }
+function minsToTime(m) { const h=Math.floor(m/60)%24, mn=m%60; return `${String(h).padStart(2,'0')}:${String(mn).padStart(2,'0')}`; }
+function fmt(n) { return Number(n).toFixed(2); }
+function fmtH(h) { const hrs=Math.floor(h), mins=Math.round((h-hrs)*60); return mins>0?`${hrs}:${String(mins).padStart(2,'0')}`:`${hrs}:00`; }
+const DAYS_HE = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+const MONTHS_HE = ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'];
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return `${DAYS_HE[d.getDay()]}, ${d.getDate()}/${d.getMonth()+1}`;
+}
+function isFridayOrSat(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.getDay()===5 || d.getDay()===6;
+}
+function getDayOfWeek(dateStr) { return new Date(dateStr+'T12:00:00').getDay(); }
+
+// ========== WAGE CALC ==========
+function calcShiftPay(dateStr, startTime, endTime) {
+  const isFri = isFridayOrSat(dateStr);
+  const rates = state.rates.filter(r => r.type === (isFri ? 'friday' : 'regular'));
+  if (!rates.length) return { total:0, hours:0, breakdown:[] };
+
+  let startM = timeToMins(startTime);
+  let endM = timeToMins(endTime);
+  if (endM <= startM) endM += 24*60; // crosses midnight
+
+  const totalHours = (endM - startM) / 60;
+  let remaining = endM - startM;
+  let current = startM;
+  let totalPay = 0;
+  const breakdown = [];
+
+  // Build full-day rate timeline (2 days to handle midnight crossing)
+  const timeline = [];
+  for (let day = 0; day < 2; day++) {
+    rates.forEach(r => {
+      let rFrom = timeToMins(r.from) + day*24*60;
+      let rTo = timeToMins(r.to) + day*24*60;
+      if (r.to === '00:00' || timeToMins(r.to) <= timeToMins(r.from)) rTo += 24*60;
+      timeline.push({ from: rFrom, to: rTo, rate: r.rate });
+    });
+  }
+  // Also add next-day rates for crossing midnight
+  rates.forEach(r => {
+    let rFrom = timeToMins(r.from) + 48*60;
+    let rTo = timeToMins(r.to) + 48*60;
+    if (r.to === '00:00' || timeToMins(r.to) <= timeToMins(r.from)) rTo += 24*60;
+    timeline.push({ from: rFrom, to: rTo, rate: r.rate });
+  });
+
+  while (remaining > 0) {
+    // find rate for current minute
+    let seg = timeline.find(r => current >= r.from && current < r.to);
+    if (!seg) {
+      // fallback: base rate
+      seg = { from: current, to: current + remaining, rate: rates[0]?.rate || 0 };
+    }
+    const segEnd = Math.min(seg.to, current + remaining);
+    const mins = segEnd - current;
+    const hrs = mins / 60;
+    const pay = hrs * seg.rate;
+    breakdown.push({
+      from: minsToTime(current % (24*60)),
+      to: minsToTime(segEnd % (24*60)),
+      hours: hrs,
+      rate: seg.rate,
+      pay
+    });
+    totalPay += pay;
+    remaining -= mins;
+    current = segEnd;
+  }
+
+  // Merge consecutive segments with same rate
+  const merged = [];
+  breakdown.forEach(b => {
+    const last = merged[merged.length-1];
+    if (last && last.rate === b.rate) {
+      last.to = b.to; last.hours += b.hours; last.pay += b.pay;
+    } else {
+      merged.push({...b});
+    }
+  });
+
+  return { total: totalPay, hours: totalHours, breakdown: merged };
+}
+
+// ========== CURRENT PERIOD ==========
+function getToday() { return new Date().toISOString().split('T')[0]; }
+function getCurrentMonth() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
+function getMonthShifts(ym) {
+  return state.shifts.filter(s => s.date.startsWith(ym));
+}
+function getWeekRange(offset=0) {
+  const now = new Date();
+  const day = now.getDay();
+  const sun = new Date(now); sun.setDate(now.getDate() - day + offset*7);
+  const sat = new Date(sun); sat.setDate(sun.getDate()+6);
+  return { start: sun, end: sat };
+}
+function getWeekShifts(offset=0) {
+  const {start, end} = getWeekRange(offset);
+  return state.shifts.filter(s => {
+    const d = new Date(s.date+'T12:00:00');
+    return d >= start && d <= end;
+  });
+}
+function shiftSummary(s) { return calcShiftPay(s.date, s.start, s.end); }
+
+// ========== TAB ==========
+let currentTab = 'dashboard';
+let weekOffset = 0;
+let editingShiftId = null;
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-'+tab).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page===tab);
+  });
+  document.getElementById('fabBtn').style.display = (tab==='journal'||tab==='dashboard') ? 'flex' : 'none';
+  renderPage(tab);
+}
+
+function renderPage(tab) {
+  if (tab==='dashboard') renderDashboard();
+  else if (tab==='journal') renderJournal();
+  else if (tab==='stats') renderStats();
+  else if (tab==='generator') renderGenerator();
+  else if (tab==='settings') renderSettings();
+}
+
+// ========== DASHBOARD ==========
+function renderDashboard() {
+  const ym = getCurrentMonth();
+  const shifts = getMonthShifts(ym);
+  let totalPay = 0, totalHours = 0;
+  shifts.forEach(s => { const c=shiftSummary(s); totalPay+=c.total; totalHours+=c.hours; });
+
+  const goal = state.monthlyGoal;
+  const remaining = goal - totalPay;
+  const pct = Math.min(100, (totalPay/goal)*100);
+  const avgHourly = totalHours>0 ? totalPay/totalHours : 0;
+
+  // Week stats
+  const weekShifts = getWeekShifts(0);
+  let weekPay=0, weekHours=0;
+  weekShifts.forEach(s=>{const c=shiftSummary(s);weekPay+=c.total;weekHours+=c.hours;});
+  const weekGoal = goal/4.33;
+  const weekMissing = weekGoal - weekPay;
+
+  // Weekly hours goal
+  const wHoursGoal = state.weeklyHoursGoal || 15;
+  const wHoursMissing = wHoursGoal - weekHours;
+
+  const today = new Date();
+  const dateStr = `${DAYS_HE[today.getDay()]}, ${today.getDate()} ב${MONTHS_HE[today.getMonth()]} ${today.getFullYear()}`;
+
+  const avatarHtml = state.avatar
+    ? `<img src="${state.avatar}">`
+    : `<span>${(state.userName||'?')[0]}</span>`;
+
+  const overGoal = totalPay >= goal;
+  const overAmount = totalPay - goal;
+  const heroOverText = overGoal
+    ? `<div class="hero-over"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:99px;font-size:12px">✅ עברת את היעד ב־${fmt(overAmount)} ₪</span></div>`
+    : `<div class="hero-over"><span style="background:rgba(0,0,0,0.15);padding:3px 10px;border-radius:99px;font-size:12px">⏳ נשארו ${fmt(Math.abs(remaining))} ₪ ליעד</span></div>`;
+
+  // Recent shifts (last 5)
+  const recent = [...state.shifts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
+  const recentHtml = recent.length ? recent.map(s => {
+    const c = shiftSummary(s);
+    const bkd = c.breakdown.map(b=>`${b.from}–${b.to} לפי ${fmt(b.rate)} ₪`).join('<br>');
+    return `<div class="shift-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
+        <div style="flex:1;cursor:pointer" onclick="this.closest('.shift-item').classList.toggle('expanded')">
+          <div class="shift-row1" style="margin-bottom:2px">
+            <span class="shift-date">${formatDate(s.date)}</span>
+            <span class="shift-pay">${fmt(c.total)} ₪</span>
+          </div>
+          <div class="shift-row2">${s.start}–${s.end} · ${fmtH(c.hours)} שעות${s.note?` · <span style="color:var(--text3)">${s.note}</span>`:''}</div>
+        </div>
+        <button onclick="event.stopPropagation();editShift('${s.id}')"
+          style="flex-shrink:0;margin-right:8px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-family:Heebo,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--green-dark);white-space:nowrap;margin-top:2px">
+          ✏️ ערוך
+        </button>
+      </div>
+      <div class="shift-detail shift-detail-hidden" style="margin-top:6px">
+        <div style="font-size:11px;color:var(--text2);line-height:1.8;background:var(--bg);padding:8px 10px;border-radius:8px;margin-bottom:8px">${bkd}<br><b>סה"כ: ${fmt(c.total)} ₪</b></div>
+        <button onclick="event.stopPropagation();deleteShift('${s.id}')"
+          style="width:100%;padding:7px;border-radius:8px;border:1.5px solid var(--red-light);background:var(--red-light);font-family:Heebo,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">
+          🗑 מחק משמרת
+        </button>
+      </div>
+    </div>`;
+  }).join('') : `<div class="empty-state"><div class="icon">📋</div><p>אין משמרות עדיין<br><small>לחץ + להוספת משמרת</small></p></div>`;
+
+  document.getElementById('page-dashboard').innerHTML = `
+    <div class="profile-bar">
+      <div class="avatar" id="dashAvatar">${avatarHtml}</div>
+      <div class="profile-text">
+        <div class="name">שלום, ${state.userName} 👋</div>
+        <div class="date">${dateStr}</div>
+      </div>
+    </div>
+
+    <div class="hero-card">
+      <div class="hero-goal">יעד חודשי: ${fmt(goal)} ₪</div>
+      <div class="hero-label">שכר מצטבר החודש</div>
+      <div class="hero-amount">${fmt(totalPay)} ₪</div>
+      ${heroOverText}
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" style="width:${pct}%"></div>
+      </div>
+      <div class="hero-row">
+        <div class="hero-stat"><b>${fmtH(totalHours)}</b>שעות החודש</div>
+        <div class="hero-stat" style="text-align:center"><b>${fmt(pct)}%</b>מהיעד</div>
+        <div class="hero-stat" style="text-align:left"><b>${fmt(avgHourly)} ₪</b>ממוצע/שעה</div>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="mini-card">
+        <div class="label">שכר השבוע</div>
+        <div class="val green">${fmt(weekPay)} ₪</div>
+        <div class="sub">${fmtH(weekHours)} שעות</div>
+      </div>
+      <div class="mini-card">
+        <div class="label">חסר השבוע</div>
+        <div class="val ${weekMissing>0?'red':'green'}">${weekMissing>0?fmt(weekMissing)+' ₪':'✓ הושג'}</div>
+        <div class="sub">יעד שבועי: ${fmt(weekGoal)} ₪</div>
+      </div>
+      <div class="mini-card">
+        <div class="label">שעות השבוע</div>
+        <div class="val ${wHoursMissing>0?'':'green'}">${fmtH(weekHours)}</div>
+        <div class="sub">יעד: ${wHoursGoal} שעות</div>
+      </div>
+      <div class="mini-card">
+        <div class="label">${wHoursMissing>0?'נשארו לשעות':'יעד שעות'}</div>
+        <div class="val ${wHoursMissing>0?'red':'green'}">${wHoursMissing>0?fmtH(wHoursMissing)+' ש\'':'✓ הושג'}</div>
+        <div class="sub">${shifts.length} משמרות החודש</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">משמרות אחרונות</div>
+      ${recentHtml}
+    </div>
+  `;
+}
+
+// ========== JOURNAL ==========
+function renderJournal() {
+  const {start, end} = getWeekRange(weekOffset);
+  const startStr = `${start.getDate()}/${start.getMonth()+1}`;
+  const endStr = `${end.getDate()}/${end.getMonth()+1}`;
+
+  const days = [];
+  for (let i=0;i<7;i++) {
+    const d = new Date(start); d.setDate(start.getDate()+i);
+    days.push(d);
+  }
+
+  const dayCards = days.map(d => {
+    const ds = d.toISOString().split('T')[0];
+    const dayShifts = state.shifts.filter(s=>s.date===ds);
+    const totalPay = dayShifts.reduce((a,s)=>{const c=shiftSummary(s);return a+c.total;},0);
+    const totalHrs = dayShifts.reduce((a,s)=>{const c=shiftSummary(s);return a+c.hours;},0);
+    const isToday = ds === getToday();
+
+    const shiftsHtml = dayShifts.length ? dayShifts.map(s=>{
+      const c=shiftSummary(s);
+      const bkd=c.breakdown.map(b=>`<div style="font-size:11px;color:var(--text2)">${b.from}–${b.to} לפי ${fmt(b.rate)} ₪ (${fmtH(b.hours)} שעות)</div>`).join('');
+      return `<div style="border-bottom:1px solid var(--border);padding:10px 0;last-child{border:none}">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <span style="font-size:13px;font-weight:700">${s.start}–${s.end} · ${fmtH(c.hours)} שעות</span>
+          <span style="font-size:14px;font-weight:800;color:var(--green-dark)">${fmt(c.total)} ₪</span>
+        </div>
+        ${bkd}
+        ${s.note?`<div style="font-size:11px;color:var(--text3);margin-top:3px">📝 ${s.note}</div>`:''}
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button onclick="editShift('${s.id}')" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-family:Heebo,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--text2)">✏️ ערוך</button>
+          <button onclick="deleteShift('${s.id}')" style="flex:1;padding:6px;border-radius:8px;border:1.5px solid var(--red-light);background:var(--red-light);font-family:Heebo,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--red)">🗑 מחק</button>
+        </div>
+      </div>`;
+    }).join('') : `<div style="text-align:center;padding:12px;color:var(--text3);font-size:12px">אין משמרות</div>`;
+
+    return `<div class="day-card${isToday?' open':''}">
+      <div class="day-card-header" onclick="this.parentElement.classList.toggle('open')">
+        <div>
+          <div class="day-name" style="${isToday?'color:var(--green-dark)':''}">
+            ${DAYS_HE[d.getDay()]}${isToday?' (היום)':''}
+          </div>
+          <div class="day-date-s">${d.getDate()}/${d.getMonth()+1}</div>
+        </div>
+        <div class="day-right">
+          ${dayShifts.length?`<span class="day-badge">${fmt(totalPay)} ₪ · ${fmtH(totalHrs)} ש'</span>`:
+          `<span class="day-badge empty">פנוי</span>`}
+          <span style="color:var(--text3);font-size:16px">›</span>
+        </div>
+      </div>
+      <div class="day-shifts">${shiftsHtml}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('page-journal').innerHTML = `
+    <div class="page-header">
+      <div>
+        <div class="page-title">יומן משמרות</div>
+      </div>
+    </div>
+    <div class="week-nav">
+      <button onclick="changeWeek(1)">‹</button>
+      <span class="week-label">שבוע ${startStr} – ${endStr}</span>
+      <button onclick="changeWeek(-1)">›</button>
+    </div>
+    ${dayCards}
+    <div style="height:20px"></div>
+  `;
+}
+
+function changeWeek(d) { weekOffset += d; renderJournal(); }
+
+// ========== SHIFT MODAL ==========
+function buildTimeSelect(id, isHour) {
+  const el = document.getElementById(id);
+  el.innerHTML = '';
+  if (isHour) {
+    for(let h=0;h<24;h++) {
+      const o=document.createElement('option');
+      o.value=String(h).padStart(2,'0');
+      o.textContent=String(h).padStart(2,'0');
+      el.appendChild(o);
+    }
+  } else {
+    [0,15,30,45].forEach(m=>{
+      const o=document.createElement('option');
+      o.value=String(m).padStart(2,'0');
+      o.textContent=String(m).padStart(2,'0');
+      el.appendChild(o);
+    });
+  }
+}
+
+function openAddShift(dateStr) {
+  editingShiftId = null;
+  document.getElementById('shiftModalTitle').textContent = 'הוספת משמרת';
+  document.getElementById('shiftDate').value = dateStr || getToday();
+  buildTimeSelect('startH',true); buildTimeSelect('startM',false);
+  buildTimeSelect('endH',true); buildTimeSelect('endM',false);
+  document.getElementById('startH').value='19'; document.getElementById('startM').value='00';
+  document.getElementById('endH').value='23'; document.getElementById('endM').value='00';
+  document.getElementById('shiftNote').value='';
+  document.getElementById('shiftDeleteBtn').style.display='none';
+  document.getElementById('shiftModal').classList.add('open');
+  updateShiftPreview();
+  ['startH','startM','endH','endM','shiftDate'].forEach(id=>document.getElementById(id).addEventListener('change',updateShiftPreview));
+}
+
+function editShift(id) {
+  const s = state.shifts.find(x=>x.id===id);
+  if(!s) return;
+  editingShiftId = id;
+  document.getElementById('shiftModalTitle').textContent = 'עריכת משמרת';
+  document.getElementById('shiftDate').value = s.date;
+  buildTimeSelect('startH',true); buildTimeSelect('startM',false);
+  buildTimeSelect('endH',true); buildTimeSelect('endM',false);
+  const [sh,sm]=s.start.split(':'); const [eh,em]=s.end.split(':');
+  document.getElementById('startH').value=sh; document.getElementById('startM').value=sm;
+  document.getElementById('endH').value=eh; document.getElementById('endM').value=em;
+  document.getElementById('shiftNote').value=s.note||'';
+  document.getElementById('shiftDeleteBtn').style.display='block';
+  document.getElementById('shiftModal').classList.add('open');
+  updateShiftPreview();
+  ['startH','startM','endH','endM','shiftDate'].forEach(id=>document.getElementById(id).addEventListener('change',updateShiftPreview));
+}
+
+function updateShiftPreview() {
+  const date = document.getElementById('shiftDate').value;
+  const start = document.getElementById('startH').value+':'+document.getElementById('startM').value;
+  const end = document.getElementById('endH').value+':'+document.getElementById('endM').value;
+  if(!date) return;
+  const c = calcShiftPay(date, start, end);
+  const bkd = c.breakdown.map(b=>`${b.from}–${b.to} לפי ${fmt(b.rate)} ₪ (${fmtH(b.hours)} שעות)`).join('<br>');
+  document.getElementById('shiftPreview').innerHTML = `${bkd}<br><b>סה"כ: ${fmtH(c.hours)} שעות · ${fmt(c.total)} ₪</b>`;
+}
+
+function closeShiftModal() { document.getElementById('shiftModal').classList.remove('open'); }
+
+document.getElementById('shiftSaveBtn').onclick = function() {
+  const date = document.getElementById('shiftDate').value;
+  const start = document.getElementById('startH').value+':'+document.getElementById('startM').value;
+  const end = document.getElementById('endH').value+':'+document.getElementById('endM').value;
+  const note = document.getElementById('shiftNote').value.trim();
+  if(!date) { showSnack('יש לבחור תאריך'); return; }
+  if(editingShiftId) {
+    const idx = state.shifts.findIndex(s=>s.id===editingShiftId);
+    if(idx>=0) state.shifts[idx] = {...state.shifts[idx], date, start, end, note};
+  } else {
+    state.shifts.push({ id: Date.now().toString(), date, start, end, note });
+  }
+  save(); closeShiftModal(); showSnack(editingShiftId?'משמרת עודכנה':'משמרת נוספה');
+  renderPage(currentTab);
+};
+
+document.getElementById('shiftDeleteBtn').onclick = function() {
+  if(!editingShiftId) return;
+  state.shifts = state.shifts.filter(s=>s.id!==editingShiftId);
+  save(); closeShiftModal(); showSnack('משמרת נמחקה'); renderPage(currentTab);
+};
+
+function deleteShift(id) {
+  if(!confirm('למחוק משמרת זו?')) return;
+  state.shifts = state.shifts.filter(s=>s.id!==id);
+  save(); showSnack('משמרת נמחקה'); renderPage(currentTab);
+}
+
+document.getElementById('fabBtn').onclick = () => openAddShift(null);
+
+// ========== STATS ==========
+function renderStats() {
+  const ym = getCurrentMonth();
+  const mShifts = getMonthShifts(ym);
+  let mPay=0,mHrs=0,mNight=0,mFriSat=0;
+  const weekMap={};
+  const dayMap={0:0,1:0,2:0,3:0,4:0,5:0,6:0};
+
+  mShifts.forEach(s=>{
+    const c=shiftSummary(s);
+    mPay+=c.total; mHrs+=c.hours;
+    const d=new Date(s.date+'T12:00:00');
+    const wd=d.getDay();
+    if(wd===5||wd===6) mFriSat+=c.hours;
+    const sh=parseInt(s.start.split(':')[0]);
+    if(sh>=19||sh<7) mNight++;
+    dayMap[wd]=(dayMap[wd]||0)+c.total;
+    const wk=getWeekKey(d);
+    weekMap[wk]=(weekMap[wk]||0)+c.total;
+  });
+
+  const wShifts=getWeekShifts(0);
+  let wPay=0,wHrs=0;
+  wShifts.forEach(s=>{const c=shiftSummary(s);wPay+=c.total;wHrs+=c.hours;});
+
+  const bestDay=Object.entries(dayMap).sort((a,b)=>b[1]-a[1])[0];
+  const bestWeek=Object.entries(weekMap).sort((a,b)=>b[1]-a[1])[0];
+
+  // Build week chart (last 6 weeks)
+  const weekChartData=[];
+  for(let i=5;i>=0;i--){
+    const ws=getWeekShifts(-i);
+    let wp=0; ws.forEach(s=>{const c=shiftSummary(s);wp+=c.total;});
+    const {start}=getWeekRange(-i);
+    weekChartData.push({label:`${start.getDate()}/${start.getMonth()+1}`,val:wp});
+  }
+  const maxW=Math.max(...weekChartData.map(d=>d.val),1);
+  const weekBarsHtml=weekChartData.map(d=>`
+    <div class="bar-col">
+      <div class="bar-val">${d.val>0?Math.round(d.val):''}</div>
+      <div class="bar-fill" style="height:${Math.max(4,(d.val/maxW)*90)}px"></div>
+      <div class="bar-label">${d.label}</div>
+    </div>`).join('');
+
+  // Day chart
+  const dayNames=['א','ב','ג','ד','ה','ו','ש'];
+  const maxD=Math.max(...Object.values(dayMap),1);
+  const dayBarsHtml=[0,1,2,3,4,5,6].map(i=>`
+    <div class="bar-col">
+      <div class="bar-val">${dayMap[i]>0?Math.round(dayMap[i]):''}</div>
+      <div class="bar-fill" style="height:${Math.max(4,(dayMap[i]/maxD)*90)}px;${i===5||i===6?'background:linear-gradient(to top,#f97316,#fb923c)':''}"></div>
+      <div class="bar-label">${dayNames[i]}</div>
+    </div>`).join('');
+
+  document.getElementById('page-stats').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">סטטיסטיקות</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">סיכום שבוע נוכחי</div>
+      <div class="stat-row"><span class="key">שעות עבודה</span><span class="val">${fmtH(wHrs)}</span></div>
+      <div class="stat-row"><span class="key">שכר</span><span class="val">${fmt(wPay)} ₪</span></div>
+      <div class="stat-row"><span class="key">ממוצע לשעה</span><span class="val">${wHrs>0?fmt(wPay/wHrs):'0.00'} ₪</span></div>
+      <div class="stat-row"><span class="key">מספר משמרות</span><span class="val">${wShifts.length}</span></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">סיכום חודש נוכחי</div>
+      <div class="stat-row"><span class="key">שעות עבודה</span><span class="val">${fmtH(mHrs)}</span></div>
+      <div class="stat-row"><span class="key">שכר</span><span class="val">${fmt(mPay)} ₪</span></div>
+      <div class="stat-row"><span class="key">ממוצע לשעה</span><span class="val">${mHrs>0?fmt(mPay/mHrs):'0.00'} ₪</span></div>
+      <div class="stat-row"><span class="key">מספר משמרות</span><span class="val">${mShifts.length}</span></div>
+      <div class="stat-row"><span class="key">משמרות לילה</span><span class="val">${mNight}</span></div>
+      <div class="stat-row"><span class="key">שעות שישי/שבת</span><span class="val">${fmtH(mFriSat)}</span></div>
+      ${bestDay?`<div class="stat-row"><span class="key">יום הכי רווחי</span><span class="val">${DAYS_HE[bestDay[0]]}</span></div>`:''}
+      ${bestWeek?`<div class="stat-row"><span class="key">שבוע הכי רווחי</span><span class="val">${fmt(bestWeek[1])} ₪</span></div>`:''}
+    </div>
+
+    <div class="card">
+      <div class="card-title">הכנסה לפי שבוע (6 שבועות)</div>
+      <div class="chart-wrap">
+        <div class="bar-chart">${weekBarsHtml}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">הכנסה לפי יום (החודש)</div>
+      <div class="chart-wrap">
+        <div class="bar-chart">${dayBarsHtml}</div>
+      </div>
+    </div>
+  `;
+}
+
+function getWeekKey(d) {
+  const day=d.getDay(), sun=new Date(d); sun.setDate(d.getDate()-day);
+  return sun.toISOString().split('T')[0];
+}
+
+// ========== GENERATOR ==========
+function renderGenerator() {
+  const p = state.genPrefs;
+  const goal = state.monthlyGoal;
+
+  const allHours = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00'];
+
+  const dayOptions = ['א\'','ב\'','ג\'','ד\'','ה\'','ו\'','ש\'']
+    .map((d,i)=>`<label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid ${p.preferredDays.includes(i)?'var(--green)':'var(--border)'};background:${p.preferredDays.includes(i)?'var(--green-light)':'#fff'};color:${p.preferredDays.includes(i)?'var(--green-dark)':'var(--text3)'};transition:all .15s" onclick="togglePrefDay(${i});renderGenerator()">
+        ${d}
+      </div>
+    </label>`).join('');
+
+  document.getElementById('page-generator').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">מחולל משמרות</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">הגדרות</div>
+      <div class="field">
+        <label>יעד שכר חודשי (₪)</label>
+        <input type="number" id="genGoal" value="${goal}" oninput="updateGenGoal(this.value)">
+      </div>
+      <div class="time-row">
+        <div class="field">
+          <label>מינ' שעות שבועיות</label>
+          <input type="number" id="genMinWeek" value="${p.minWeekHours}" min="0" max="60" oninput="state.genPrefs.minWeekHours=+this.value">
+        </div>
+        <div class="field">
+          <label>מקס' שעות למשמרת</label>
+          <input type="number" id="genMaxShift" value="${p.maxShiftHours||6}" min="1" max="12" oninput="state.genPrefs.maxShiftHours=+this.value;state.genPrefs.maxDayHours=+this.value">
+        </div>
+      </div>
+      <div class="time-row">
+        <div class="field">
+          <label>מקס' שעות ליום (כולל מפוצל)</label>
+          <input type="number" id="genMaxDayTotal" value="${p.maxDayTotalHours||10}" min="1" max="24" oninput="state.genPrefs.maxDayTotalHours=+this.value">
+        </div>
+        <div class="field">
+          <label style="color:var(--text3);font-size:11px">מינ' לחישוב: 1שעה/משמרת, 3שעות/יום</label>
+          <div style="padding:12px 14px;background:var(--green-light);border-radius:var(--radius-sm);font-size:12px;color:var(--green-dark);font-weight:600">תמיד מובטח ✓</div>
+        </div>
+      </div>
+      <div class="toggle-row">
+        <span class="toggle-label">עבודה בשבת</span>
+        <div class="toggle ${p.includeSat?'on':''}" id="satToggle" onclick="toggleSat(this)"></div>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <span class="toggle-label">אפשר משמרות מפוצלות</span>
+          <div style="font-size:11px;color:var(--text3);margin-top:2px">למשל: 09:00–12:00 + 19:00–22:00</div>
+        </div>
+        <div class="toggle ${p.allowSplitShift?'on':''}" id="splitToggle" onclick="toggleSplit(this)"></div>
+      </div>
+      <div class="field" style="margin-top:12px">
+        <label>שישי בלילה</label>
+        <select id="genFriNight" onchange="state.genPrefs.fridayNight=this.value">
+          <option value="full" ${p.fridayNight==='full'?'selected':''}>מלא</option>
+          <option value="partial" ${p.fridayNight==='partial'?'selected':''}>חלקי</option>
+          <option value="none" ${p.fridayNight==='none'?'selected':''}>לא</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>מינימום משמרות לילה בשבוע</label>
+        <input type="number" id="genMinNight" value="${p.minNightShifts}" min="0" max="7" oninput="state.genPrefs.minNightShifts=+this.value">
+      </div>
+      <div class="field">
+        <label>שעת התחלה מועדפת</label>
+        <select id="genPrefHour" onchange="state.genPrefs.preferredHour=this.value">
+          ${allHours.map(h=>`<option value="${h}" ${p.preferredHour===h?'selected':''}>${h}</option>`).join('')}
+        </select>
+      </div>
+      <div class="field">
+        <label>בחירת ימי עבודה</label>
+        <div style="background:#f8fafc;border-radius:var(--radius-sm);padding:12px;margin-top:4px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+            <span style="font-size:12px;font-weight:600;color:var(--text2)">מספר ימים בשבוע</span>
+            <select id="genWeekDaysCount" style="padding:6px 10px;border-radius:8px;border:1.5px solid var(--border);font-family:Heebo,sans-serif;font-size:14px;font-weight:700;background:#fff;color:var(--text);width:80px;direction:rtl" onchange="onWeekDaysCountChange(this.value)" ${p.preferredDays.length?'disabled':''}>
+              <option value="0" ${(p.weekDaysCount||0)===0?'selected':''}>הכל</option>
+              ${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${p.weekDaysCount===n?'selected':''}>${n} ימים</option>`).join('')}
+            </select>
+          </div>
+          <div style="width:100%;height:1px;background:var(--border);margin-bottom:10px;position:relative">
+            <span style="position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#f8fafc;padding:0 6px;font-size:10px;color:var(--text3);font-weight:600">או</span>
+          </div>
+          <div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">ימים מועדפים ספציפיים</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            ${['א\'','ב\'','ג\'','ד\'','ה\'','ו\'','ש\''].map((d,i)=>`
+              <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid ${p.preferredDays.includes(i)?'var(--green)':'var(--border)'};background:${p.preferredDays.includes(i)?'var(--green-light)':'#fff'};color:${p.preferredDays.includes(i)?'var(--green-dark)':p.weekDaysCount?'var(--border)':'var(--text3)'};transition:all .15s;cursor:${p.weekDaysCount?'not-allowed':'pointer'};opacity:${p.weekDaysCount?'0.4':'1'}" onclick="${p.weekDaysCount?'showSnack(\'בטל מספר ימים קודם\')':'togglePrefDay('+i+');renderGenerator()'}">${d}</div>
+            `).join('')}
+          </div>
+          ${p.preferredDays.length ? `<div style="margin-top:8px;font-size:11px;color:var(--green-dark);font-weight:600">✓ נבחרו ${p.preferredDays.length} ימים מועדפים — מספר הימים מושבת</div>` : ''}
+          ${p.weekDaysCount ? `<div style="margin-top:8px;font-size:11px;color:var(--text2);font-weight:600">✓ ${p.weekDaysCount} ימי עבודה בשבוע — בחירת ימים ספציפיים מושבתת</div>` : ''}
+          ${!p.preferredDays.length && !p.weekDaysCount ? `<div style="margin-top:8px;font-size:11px;color:var(--text3)">לא נבחר — יחושב לפי 7 ימים</div>` : ''}
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="generateSchedules()">⚡ צור לוח משמרות</button>
+      <button class="btn" style="margin-top:10px;background:linear-gradient(135deg,#f97316,#fb923c);color:#fff;box-shadow:0 4px 14px rgba(249,115,22,0.35)" onclick="generateFastest()">🚀 הכי מהר ליעד</button>
+      <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:6px">מתעלם מסינונים · מחשב מינימום שעות אפשרי</div>
+    </div>
+
+    <div id="genResults"></div>
+  `;
+}
+
+function updateGenGoal(v) { state.monthlyGoal=parseFloat(v)||0; save(); }
+function toggleSat(el) { el.classList.toggle('on'); state.genPrefs.includeSat=el.classList.contains('on'); save(); }
+function toggleSplit(el) { el.classList.toggle('on'); state.genPrefs.allowSplitShift=el.classList.contains('on'); save(); }
+function togglePrefDay(i) {
+  // Clear weekDaysCount when user picks specific days
+  state.genPrefs.weekDaysCount = 0;
+  const idx = state.genPrefs.preferredDays.indexOf(i);
+  if (idx >= 0) state.genPrefs.preferredDays.splice(idx, 1);
+  else state.genPrefs.preferredDays.push(i);
+  save();
+}
+function onWeekDaysCountChange(v) {
+  const n = parseInt(v) || 0;
+  state.genPrefs.weekDaysCount = n;
+  // Clear preferred days when user picks a count
+  if (n > 0) state.genPrefs.preferredDays = [];
+  save();
+  renderGenerator();
+}
+
+function generateSchedules() {
+  save();
+  const p = state.genPrefs;
+  const monthGoal = state.monthlyGoal;
+
+  // ---- Hard floors: always at least 1h/shift, 3h/day ----
+  const MAX_SHIFT = Math.max(1, p.maxShiftHours || p.maxDayHours || 6);
+  const MAX_DAY   = Math.max(3, p.maxDayTotalHours || 10);
+  const SPLIT_LEG  = Math.max(1, Math.min(MAX_SHIFT, Math.floor(MAX_DAY / 2)));
+  const SPLIT_TOTAL = SPLIT_LEG * 2;
+
+  // ---- Resolve effective allowed days ----
+  // Priority: 1) preferredDays (specific)  2) weekDaysCount (N random best days)  3) all 7
+  let EFFECTIVE_DAYS; // array of dayIdx values allowed across ALL scenarios
+  if (p.preferredDays.length > 0) {
+    // Exact days chosen — use only those
+    EFFECTIVE_DAYS = [...p.preferredDays];
+  } else if (p.weekDaysCount > 0) {
+    // Pick the N highest-paying days (fri/sat/thu first) respecting sat toggle
+    const candidateOrder = p.includeSat
+      ? [5, 6, 4, 3, 2, 1, 0]   // fri, sat, thu, wed, tue, mon, sun
+      : [5, 4, 3, 2, 1, 0];      // no sat
+    EFFECTIVE_DAYS = candidateOrder.slice(0, Math.min(p.weekDaysCount, candidateOrder.length));
+  } else {
+    // No restriction — all 7 (sat gated by toggle)
+    EFFECTIVE_DAYS = null; // null = use scenario's own logic
+  }
+
+  // Get next week's Sunday
+  const nextSun = getNextSunday();
+  const weekDates = [0,1,2,3,4,5,6].map(i => {
+    const d = new Date(nextSun); d.setDate(nextSun.getDate()+i);
+    return { dayIdx: i, dateStr: d.toISOString().split('T')[0], dayName: DAYS_HE[i] };
+  });
+
+  // ---- Make a single shift entry ----
+  function makeShift(dayIdx, startHour, hrs) {
+    const hrs_clamped = Math.max(1, Math.min(hrs, MAX_SHIFT));
+    const wd = weekDates[dayIdx];
+    const start = startHour;
+    const end = addHours(start, hrs_clamped);
+    const c = calcShiftPay(wd.dateStr, start, end);
+    return { dayIdx, dayName: DAYS_HE[dayIdx], dateStr: wd.dateStr, start, end, pay: c.total, hours: c.hours };
+  }
+
+  // ---- Make a split-shift pair (noon + evening) ----
+  function makeSplitPair(dayIdx, morningStart, eveningStart) {
+    const leg = SPLIT_LEG;
+    const s1 = makeShift(dayIdx, morningStart, leg);
+    const s2 = makeShift(dayIdx, eveningStart, leg);
+    return [
+      { ...s1, isSplitFirst: true,  pairId: dayIdx },
+      { ...s2, isSplitSecond: true, pairId: dayIdx }
+    ];
+  }
+
+  // ---- Effective start hour for a day ----
+  function startHourFor(dayIdx, rules) {
+    let h = rules.startHour || p.preferredHour || '19:00';
+    if (rules.noNight) h = '07:00';
+    if (rules.preferNight) h = '19:00';
+    if (dayIdx === 5) { // Friday
+      if (p.fridayNight === 'none' || rules.noNight) h = '07:00';
+      else if (p.fridayNight === 'full' && !rules.noNight) h = '19:00';
+    }
+    return h;
+  }
+
+  // ---- Pay & goal helpers ----
+  function totalWeekPay(schedule) { return schedule.reduce((a,s) => a + s.pay, 0); }
+  function meetsGoal(schedule) { return (totalWeekPay(schedule) * 4.33) >= monthGoal; }
+
+  // ---- Build one day's contribution (single or split) ----
+  function dayEntries(dayIdx, rules, forceSplit) {
+    const startH = startHourFor(dayIdx, rules);
+    if (forceSplit || (rules.splitShift && p.allowSplitShift)) {
+      // Split: noon + evening (or morning + evening)
+      const mStart = rules.noNight ? '09:00' : '13:00';
+      const eStart = rules.noNight ? '15:00' : '19:00';
+      return makeSplitPair(dayIdx, mStart, eStart);
+    }
+    return [makeShift(dayIdx, startH, MAX_SHIFT)];
+  }
+
+  // ---- Build base schedule ----
+  function buildBase(rules) {
+    // allowedDays is already the resolved list (after EFFECTIVE_DAYS filtering)
+    const allowed = rules.allowedDays !== undefined ? rules.allowedDays : [0,1,2,3,4,5,6];
+    let schedule = [];
+    allowed.forEach(dayIdx => {
+      if (rules.noSat && dayIdx === 6) return;
+      if (!p.includeSat && dayIdx === 6) return;
+      schedule.push(...dayEntries(dayIdx, rules, false));
+    });
+    return schedule;
+  }
+
+  // ---- Extend schedule until goal reached ----
+  // STRICT: only add days that are in rules.allowedDays — never go outside the user's selection
+  function extendToGoal(schedule, rules) {
+    let s = [...schedule];
+    if (meetsGoal(s)) return s;
+
+    const allowed = rules.allowedDays !== undefined ? rules.allowedDays : [0,1,2,3,4,5,6];
+
+    // Step 1: add unused days — only from allowedDays, sorted by pay potential (fri/sat first)
+    const usedDays = () => new Set(s.map(x => x.dayIdx));
+    const candidates = [...allowed]
+      .filter(d => !(rules.noSat && d === 6))
+      .filter(d => !(!p.includeSat && d === 6))
+      .sort((a, b) => {
+        // Sort by pay potential desc
+        const sh = startHourFor(a, rules);
+        const pa = calcShiftPay(weekDates[a].dateStr, sh, addHours(sh, MAX_SHIFT)).total;
+        const pb = calcShiftPay(weekDates[b].dateStr, startHourFor(b, rules), addHours(startHourFor(b, rules), MAX_SHIFT)).total;
+        return pb - pa;
+      });
+
+    for (const d of candidates) {
+      if (meetsGoal(s)) break;
+      if (usedDays().has(d)) continue;
+      s.push(...dayEntries(d, rules, false));
+    }
+
+    // Step 2: upgrade single-shift days to split shifts (still within allowedDays only)
+    if (!meetsGoal(s)) {
+      const singleDays = [...new Set(
+        s.filter(x => !x.isSplitFirst && !x.isSplitSecond).map(x => x.dayIdx)
+      )].sort((a, b) => {
+        const pa = s.filter(x=>x.dayIdx===a).reduce((acc,x)=>acc+x.pay,0);
+        const pb = s.filter(x=>x.dayIdx===b).reduce((acc,x)=>acc+x.pay,0);
+        return pb - pa;
+      });
+      for (const d of singleDays) {
+        if (meetsGoal(s)) break;
+        s = s.filter(x => x.dayIdx !== d);
+        const mStart = rules.noNight ? '09:00' : '13:00';
+        const eStart = rules.noNight ? '15:00' : '19:00';
+        s.push(...makeSplitPair(d, mStart, eStart));
+      }
+    }
+
+    // Step 3: add extra hours on split days if still short (still within allowedDays)
+    if (!meetsGoal(s) && MAX_DAY > SPLIT_TOTAL) {
+      const splitDays = [...new Set(s.filter(x=>x.isSplitFirst).map(x=>x.dayIdx))];
+      for (const d of splitDays) {
+        if (meetsGoal(s)) break;
+        const used = s.filter(x=>x.dayIdx===d).reduce((a,x)=>a+x.hours,0);
+        const remaining = MAX_DAY - used;
+        if (remaining >= 1) {
+          const extra = makeShift(d, '07:00', Math.min(remaining, MAX_SHIFT));
+          s.push({ ...extra, isMidShift: true });
+        }
+      }
+    }
+
+    return s.sort((a,b) => a.dayIdx - b.dayIdx || a.start.localeCompare(b.start));
+  }
+
+  // ---- Render week table — only shows days in allowedDays (+ their empty slots), not all 7 ----
+  function renderWeekTable(schedule, allowedDays) {
+    // Determine which days to show rows for:
+    // If allowedDays is provided → show exactly those days (in Sun–Sat order)
+    // Otherwise → show all 7
+    const daysToShow = allowedDays
+      ? [0,1,2,3,4,5,6].filter(d => allowedDays.includes(d))
+      : [0,1,2,3,4,5,6];
+
+    return daysToShow.map(dayIdx => {
+      const dayName = DAYS_HE[dayIdx];
+      const entries = schedule
+        .filter(s => s.dayIdx === dayIdx)
+        .sort((a,b) => a.start.localeCompare(b.start));
+
+      if (!entries.length) {
+        return `<div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid var(--border)">
+          <span style="font-size:12px;font-weight:700;color:var(--text3);min-width:46px">${dayName}</span>
+          <span style="font-size:11px;color:var(--text3);flex:1;text-align:center">—</span>
+          <span style="font-size:11px;color:var(--text3)">פנוי</span>
+        </div>`;
+      }
+
+      const dayPay  = entries.reduce((a,s) => a+s.pay, 0);
+      const dayHrs  = entries.reduce((a,s) => a+s.hours, 0);
+      const isSplit = entries.some(e => e.isSplitFirst || e.isSplitSecond || e.isMidShift);
+      const timeLine = entries.map(e => `${e.start}–${e.end}`).join(' + ');
+      const splitTag = isSplit
+        ? `<span style="font-size:9px;background:var(--green-light);color:var(--green-dark);padding:1px 5px;border-radius:99px;margin-right:3px;font-weight:700">מפוצל</span>`
+        : '';
+
+      return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:4px">
+        <span style="font-size:12px;font-weight:700;color:var(--text);min-width:46px">${dayName}</span>
+        <span style="font-size:10px;color:var(--text2);flex:1;text-align:center">${timeLine} ${splitTag}<br><span style="color:var(--text3)">${fmtH(dayHrs)} שעות</span></span>
+        <span style="font-size:12px;font-weight:700;color:var(--green-dark);white-space:nowrap">${fmt(dayPay)} ₪</span>
+      </div>`;
+    }).join('');
+  }
+
+  // ---- Helper: get final allowed days for a scenario ----
+  function resolveDays(scenarioDays) {
+    if (EFFECTIVE_DAYS === null) return scenarioDays;
+    return EFFECTIVE_DAYS.filter(d => scenarioDays.includes(d));
+  }
+
+  // ---- 5 scenarios (fastest is separate button only) ----
+  const ALL7    = [0,1,2,3,4,5,6];
+  const NO_SAT  = [0,1,2,3,4,5];
+  const WEEKDAYS = [0,1,2,3,4];
+
+  const scenarios = [
+    {
+      key: 'convenient', label: '😌 הכי נוח', badge: 'נוח',
+      rules: {
+        allowedDays: resolveDays(EFFECTIVE_DAYS !== null ? ALL7 : WEEKDAYS),
+        startHour: p.preferredHour,
+        noSat: !p.includeSat
+      }
+    },
+    {
+      key: 'nosat', label: '🕌 בלי שבת', badge: 'ללא שבת',
+      rules: {
+        allowedDays: resolveDays(NO_SAT),
+        noSat: true,
+        startHour: p.preferredHour
+      }
+    },
+    {
+      key: 'nonights', label: '☀️ בלי לילות', badge: 'יום בלבד',
+      rules: {
+        allowedDays: resolveDays(ALL7),
+        noNight: true,
+        noSat: !p.includeSat,
+        startHour: '07:00'
+      }
+    },
+    {
+      key: 'balanced', label: '⚖️ מאוזן', badge: 'מאוזן',
+      rules: {
+        allowedDays: resolveDays(ALL7),
+        startHour: '13:00',
+        noSat: !p.includeSat
+      }
+    },
+    {
+      key: 'split', label: '✂️ משמרות מפוצלות', badge: 'מפוצל',
+      rules: {
+        allowedDays: resolveDays(EFFECTIVE_DAYS !== null ? ALL7 : NO_SAT),
+        splitShift: true,
+        noSat: !p.includeSat
+      }
+    },
+  ];
+
+  const results = [];
+  scenarios.forEach((sc, idx) => {
+    if (sc.key === 'split' && !p.allowSplitShift) return;
+
+    const base     = buildBase(sc.rules);
+    const extended = extendToGoal(base, sc.rules);
+
+    const wPay  = totalWeekPay(extended);
+    const wHrs  = extended.reduce((a,s) => a + s.hours, 0);
+    const monthEst = wPay * 4.33;
+    const diff  = monthEst - monthGoal;
+
+    const uniqueDays = new Set(extended.map(s => s.dayIdx)).size;
+    const shiftSegs  = extended.length;
+    const avgPerSeg  = shiftSegs > 0 ? wHrs / shiftSegs : 0;
+
+    if (!meetsGoal(extended)) return;
+
+    const weekTable = renderWeekTable(extended, sc.rules._fastest ? null : sc.rules.allowedDays);
+    const encoded   = encodeURIComponent(JSON.stringify(extended));
+
+    const isFastest = false;
+    const cardStyle = results.length===0 ? 'border:2px solid var(--green)' : '';
+
+    results.push(`<div class="gen-result-card" style="${cardStyle}">
+      <div class="gen-header">
+        <div class="gen-title">${sc.label}</div>
+        <div class="gen-badge" style="${isFastest?'background:#fff7ed;color:#c2410c':''}">${sc.badge}</div>
+      </div>
+      ${isFastest ? `<div style="margin:0 16px 8px;font-size:11px;color:#c2410c;background:#fff7ed;padding:6px 10px;border-radius:8px;font-weight:600">⚡ מחושב ללא סינונים — כולל שישי/שבת ולילות</div>` : ''}
+      <div class="gen-body">
+        <div style="margin-bottom:10px">${weekTable}</div>
+        <div class="gen-stats-row">
+          <div class="gen-stat-box"><div class="g-val">${fmtH(wHrs)}</div><div class="g-lbl">שעות שבועיות</div></div>
+          <div class="gen-stat-box"><div class="g-val">${fmt(wPay)} ₪</div><div class="g-lbl">שכר שבועי</div></div>
+          <div class="gen-stat-box"><div class="g-val">${fmt(monthEst)} ₪</div><div class="g-lbl">הערכה חודשית</div></div>
+          <div class="gen-stat-box"><div class="g-val">${fmtH(avgPerSeg)}</div><div class="g-lbl">שעות/משמרת</div></div>
+        </div>
+        <div class="gen-diff over" style="${isFastest?'background:#fff7ed;color:#c2410c':''}">✅ עובר את היעד ב־${fmt(diff)} ₪ · ${uniqueDays} ימי עבודה · ${shiftSegs} משמרות</div>
+      </div>
+    </div>
+    <button class="gen-add-btn" style="${isFastest?'background:#fff7ed;color:#c2410c':''}" onclick="addGenToJournal('${encoded}')">+ הוסף ליומן</button>`);
+  });
+
+  // ---- Active filter label ----
+  let filterLabel = '';
+  if (p.preferredDays.length > 0) {
+    filterLabel = `<div style="margin:0 16px 10px;font-size:12px;font-weight:600;color:var(--green-dark);background:var(--green-light);padding:8px 12px;border-radius:10px">
+      📅 מציג תוצאות לפי הימים שנבחרו: ${p.preferredDays.map(i=>DAYS_HE[i]).join(', ')}
+    </div>`;
+  } else if (p.weekDaysCount > 0) {
+    filterLabel = `<div style="margin:0 16px 10px;font-size:12px;font-weight:600;color:var(--green-dark);background:var(--green-light);padding:8px 12px;border-radius:10px">
+      📅 מציג תוצאות ל־${p.weekDaysCount} ימי עבודה בשבוע
+    </div>`;
+  }
+
+  const html = results.length
+    ? filterLabel + results.join('')
+    : filterLabel + `<div class="card"><div class="empty-state"><div class="icon">🤔</div>
+        <p>לא נמצאו תוצאות שמגיעות ליעד<br>
+        <small>נסה: להקטין יעד שכר, להגדיל שעות למשמרת,<br>
+        לאפשר שבת, או להפעיל משמרות מפוצלות</small></p>
+       </div></div>`;
+
+  document.getElementById('genResults').innerHTML = html;
+  document.getElementById('genResults').scrollIntoView({ behavior: 'smooth' });
+}
+
+// ---- Shared "fastest" algorithm (no filters — use highest-paying slots first) ----
+function buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, totalWeekPay, monthGoal, MAX_SHIFT, MAX_DAY, SPLIT_LEG) {
+  // All 7 days sorted by highest-paying shift (fri/sat night first)
+  const dayOrder = [5, 6, 4, 3, 2, 1, 0]; // fri, sat, thu, wed, tue, mon, sun
+  let schedule = [];
+
+  // Step 1: Add highest-paying single shift per day (19:00 = best rate)
+  for (const d of dayOrder) {
+    if (meetsGoal(schedule)) break;
+    const start = (d === 5 || d === 6) ? '19:00' : '19:00'; // always evening first
+    schedule.push(makeShift(d, start, MAX_SHIFT));
+  }
+
+  // Step 2: if still not at goal, upgrade each day to split shift (add a noon slot)
+  if (!meetsGoal(schedule)) {
+    for (const d of dayOrder) {
+      if (meetsGoal(schedule)) break;
+      const existing = schedule.filter(s => s.dayIdx === d);
+      const usedHrs  = existing.reduce((a,s) => a + s.hours, 0);
+      if (usedHrs + SPLIT_LEG <= MAX_DAY) {
+        // Add a noon shift on top of the evening one
+        const noon = makeShift(d, '13:00', Math.min(SPLIT_LEG, MAX_DAY - usedHrs));
+        schedule.push({ ...noon, isSplitFirst: true, pairId: d });
+        // Mark existing evening as split second
+        const eve = schedule.find(s => s.dayIdx === d && !s.isSplitFirst);
+        if (eve) { eve.isSplitSecond = true; eve.pairId = d; }
+      }
+    }
+  }
+
+  return schedule.sort((a,b) => a.dayIdx - b.dayIdx || a.start.localeCompare(b.start));
+}
+
+// ---- Standalone "fastest" button handler ----
+function generateFastest() {
+  save();
+  const p = state.genPrefs;
+  const monthGoal = state.monthlyGoal;
+  const MAX_SHIFT = Math.max(1, p.maxShiftHours || p.maxDayHours || 6);
+  const MAX_DAY   = Math.max(3, p.maxDayTotalHours || 10);
+  const SPLIT_LEG = Math.max(1, Math.min(MAX_SHIFT, Math.floor(MAX_DAY / 2)));
+
+  const nextSun = getNextSunday();
+  const weekDates = [0,1,2,3,4,5,6].map(i => {
+    const d = new Date(nextSun); d.setDate(nextSun.getDate()+i);
+    return { dayIdx: i, dateStr: d.toISOString().split('T')[0], dayName: DAYS_HE[i] };
+  });
+
+  function makeShift(dayIdx, startHour, hrs) {
+    const hrs_c = Math.max(1, Math.min(hrs, MAX_SHIFT));
+    const wd = weekDates[dayIdx];
+    const end = addHours(startHour, hrs_c);
+    const c = calcShiftPay(wd.dateStr, startHour, end);
+    return { dayIdx, dayName: DAYS_HE[dayIdx], dateStr: wd.dateStr, start: startHour, end, pay: c.total, hours: c.hours };
+  }
+  function makeSplitPair(dayIdx, ms, es) {
+    const s1 = makeShift(dayIdx, ms, SPLIT_LEG);
+    const s2 = makeShift(dayIdx, es, SPLIT_LEG);
+    return [{ ...s1, isSplitFirst:true, pairId:dayIdx }, { ...s2, isSplitSecond:true, pairId:dayIdx }];
+  }
+  function totalPay(s) { return s.reduce((a,x)=>a+x.pay,0); }
+  function meetsGoal(s) { return (totalPay(s)*4.33) >= monthGoal; }
+
+  const schedule = buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, totalPay, monthGoal, MAX_SHIFT, MAX_DAY, SPLIT_LEG);
+
+  const wPay  = totalPay(schedule);
+  const wHrs  = schedule.reduce((a,s)=>a+s.hours,0);
+  const monthEst = wPay * 4.33;
+  const diff  = monthEst - monthGoal;
+  const uniqueDays = new Set(schedule.map(s=>s.dayIdx)).size;
+  const shiftSegs  = schedule.length;
+  const avgPerSeg  = shiftSegs > 0 ? wHrs / shiftSegs : 0;
+
+  // Render week table — fastest shows only working days (no empty rows)
+  const activeDayIdxs = [...new Set(schedule.map(s=>s.dayIdx))].sort((a,b)=>a-b);
+  const weekTable = activeDayIdxs.map(dayIdx => {
+    const entries = schedule.filter(s=>s.dayIdx===dayIdx).sort((a,b)=>a.start.localeCompare(b.start));
+    const dn = DAYS_HE[dayIdx];
+    const dayPay = entries.reduce((a,s)=>a+s.pay,0);
+    const dayHrs = entries.reduce((a,s)=>a+s.hours,0);
+    const isSplit = entries.length > 1;
+    const timeLine = entries.map(e=>`${e.start}–${e.end}`).join(' + ');
+    const splitTag = isSplit ? `<span style="font-size:9px;background:#fff7ed;color:#c2410c;padding:1px 5px;border-radius:99px;font-weight:700">מפוצל</span>` : '';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border);gap:4px">
+      <span style="font-size:12px;font-weight:700;color:var(--text);min-width:46px">${dn}</span>
+      <span style="font-size:10px;color:var(--text2);flex:1;text-align:center">${timeLine} ${splitTag}<br><span style="color:var(--text3)">${fmtH(dayHrs)} שעות</span></span>
+      <span style="font-size:12px;font-weight:700;color:#c2410c;white-space:nowrap">${fmt(dayPay)} ₪</span>
+    </div>`;
+  }).join('');
+
+  const encoded = encodeURIComponent(JSON.stringify(schedule));
+
+  const html = `
+    <div style="margin:0 16px 4px;font-size:13px;font-weight:700;color:#c2410c">🚀 הכי מהר ליעד — ללא סינונים</div>
+    <div class="gen-result-card" style="border:2px solid #f97316;background:linear-gradient(to bottom,#fff7ed,#fff)">
+      <div class="gen-header">
+        <div class="gen-title" style="color:#c2410c">🚀 הכי מהר ליעד</div>
+        <div class="gen-badge" style="background:#fff7ed;color:#c2410c">מינימום שעות</div>
+      </div>
+      <div style="margin:0 16px 8px;font-size:11px;color:#c2410c;background:#fff7ed;padding:6px 10px;border-radius:8px;font-weight:600">
+        ⚡ מחושב ללא כל סינון — שישי/שבת + לילות לפי תעריף גבוה
+      </div>
+      <div class="gen-body">
+        <div style="margin-bottom:10px">${weekTable}</div>
+        <div class="gen-stats-row">
+          <div class="gen-stat-box"><div class="g-val" style="color:#c2410c">${fmtH(wHrs)}</div><div class="g-lbl">שעות שבועיות</div></div>
+          <div class="gen-stat-box"><div class="g-val" style="color:#c2410c">${fmt(wPay)} ₪</div><div class="g-lbl">שכר שבועי</div></div>
+          <div class="gen-stat-box"><div class="g-val" style="color:#c2410c">${fmt(monthEst)} ₪</div><div class="g-lbl">הערכה חודשית</div></div>
+          <div class="gen-stat-box"><div class="g-val" style="color:#c2410c">${fmtH(avgPerSeg)}</div><div class="g-lbl">שעות/משמרת</div></div>
+        </div>
+        <div class="gen-diff over" style="background:#fff7ed;color:#c2410c">
+          ✅ מגיע ליעד ב־${uniqueDays} ימי עבודה · ${shiftSegs} משמרות · ${fmtH(wHrs)} שעות בלבד
+        </div>
+      </div>
+    </div>
+    <button class="gen-add-btn" style="background:#fff7ed;color:#c2410c" onclick="addGenToJournal('${encoded}')">+ הוסף ליומן</button>`;
+
+  document.getElementById('genResults').innerHTML = html;
+  document.getElementById('genResults').scrollIntoView({ behavior: 'smooth' });
+}
+
+function getNextSunday() {
+  const d = new Date();
+  const day = d.getDay();
+  const diff = day === 0 ? 7 : (7 - day);
+  d.setDate(d.getDate() + diff);
+  d.setHours(0,0,0,0);
+  return d;
+}
+
+function addHours(timeStr, hrs) {
+  const [h,m]=timeStr.split(':').map(Number);
+  const total=(h*60+m+hrs*60)%(24*60);
+  return minsToTime(total);
+}
+
+function addGenToJournal(encoded) {
+  try {
+    const schedule = JSON.parse(decodeURIComponent(encoded));
+    let added=0;
+    schedule.forEach(s => {
+      // Add both parts of a split shift, skip nothing
+      const exists = state.shifts.some(x=>x.date===s.dateStr&&x.start===s.start&&x.end===s.end);
+      if(!exists) {
+        const label = s.isSplitFirst ? ' (מפוצל – בוקר)' : s.isSplitSecond ? ' (מפוצל – ערב)' : '';
+        state.shifts.push({
+          id: Date.now().toString()+Math.random(),
+          date: s.dateStr,
+          start: s.start,
+          end: s.end,
+          note: 'מחולל' + label
+        });
+        added++;
+      }
+    });
+    save(); showSnack(`${added} משמרות נוספו ליומן`);
+    switchTab('journal');
+  } catch(e) { showSnack('שגיאה בהוספה'); }
+}
+
+// ========== SETTINGS ==========
+function renderSettings() {
+  const ratesHtml = state.rates.map((r,i)=>`
+    <div class="rate-row">
+      <div class="rate-info">
+        <div class="rate-type">${r.type==='regular'?'יום רגיל':r.type==='friday'?'שישי/שבת':'חג'}</div>
+        <span class="rate-time">${r.from}–${r.to}</span>
+        <span class="rate-amount">${fmt(r.rate)} ₪</span>
+      </div>
+      <button class="rate-edit" onclick="openEditRate(${i})">✏️</button>
+      <button class="rate-del" onclick="deleteRate(${i})">🗑</button>
+    </div>`).join('');
+
+  document.getElementById('page-settings').innerHTML = `
+    <div class="page-header">
+      <div class="page-title">פרופיל והגדרות</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">פרופיל אישי</div>
+      <div class="avatar-upload" onclick="document.getElementById('avatarInput').click()">
+        <div class="avatar-big" id="settingsAvatar">
+          ${state.avatar?`<img src="${state.avatar}">`:(state.userName||'?')[0]}
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600">תמונת פרופיל</div>
+          <div class="upload-hint">לחץ להעלאת תמונה</div>
+        </div>
+      </div>
+      <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(event)">
+      <div class="field">
+        <label>שם משתמש</label>
+        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value;save()">
+      </div>
+      <div class="field">
+        <label>יעד שכר חודשי (₪)</label>
+        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0;save()">
+      </div>
+      <div class="field">
+        <label>יעד שעות שבועיות</label>
+        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15;save()">
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">תעריפי שכר</div>
+      ${ratesHtml}
+      <button class="btn btn-primary" style="margin-top:14px" onclick="openAddRate()">+ הוסף תעריף</button>
+      <button class="btn btn-secondary" style="margin-top:8px" onclick="resetRates()">איפוס לברירת מחדל</button>
+    </div>
+
+    <div style="height:20px"></div>
+  `;
+}
+
+function uploadAvatar(e) {
+  const file = e.target.files[0]; if(!file) return;
+  const r = new FileReader();
+  r.onload = ev => { state.avatar=ev.target.result; save(); renderSettings(); };
+  r.readAsDataURL(file);
+}
+
+function openAddRate() {
+  document.getElementById('rateEditIdx').value='-1';
+  document.getElementById('rateType').value='regular';
+  document.getElementById('rateFrom').value='07:00';
+  document.getElementById('rateTo').value='13:00';
+  document.getElementById('rateAmount').value='';
+  document.getElementById('rateModal').classList.add('open');
+}
+function openEditRate(i) {
+  const r=state.rates[i];
+  document.getElementById('rateEditIdx').value=i;
+  document.getElementById('rateType').value=r.type;
+  document.getElementById('rateFrom').value=r.from;
+  document.getElementById('rateTo').value=r.to;
+  document.getElementById('rateAmount').value=r.rate;
+  document.getElementById('rateModal').classList.add('open');
+}
+function closeRateModal() { document.getElementById('rateModal').classList.remove('open'); }
+function saveRate() {
+  const idx=parseInt(document.getElementById('rateEditIdx').value);
+  const r={type:document.getElementById('rateType').value,from:document.getElementById('rateFrom').value,to:document.getElementById('rateTo').value,rate:parseFloat(document.getElementById('rateAmount').value)||0};
+  if(idx>=0) state.rates[idx]=r; else state.rates.push(r);
+  save(); closeRateModal(); renderSettings(); showSnack('תעריף נשמר');
+}
+function deleteRate(i) {
+  state.rates.splice(i,1); save(); renderSettings(); showSnack('תעריף נמחק');
+}
+function resetRates() {
+  state.rates=JSON.parse(JSON.stringify(DEFAULT_RATES)); save(); renderSettings(); showSnack('תעריפים אופסו');
+}
+
+// ========== SNACKBAR ==========
+function showSnack(msg) {
+  const s=document.getElementById('snackbar');
+  s.textContent=msg; s.classList.add('show');
+  setTimeout(()=>s.classList.remove('show'),2200);
+}
+
+// ========== CLOSE MODALS ON BG ==========
+document.querySelectorAll('.modal-overlay').forEach(m=>{
+  m.addEventListener('click', e=>{ if(e.target===m) m.classList.remove('open'); });
+});
+
+// ========== INIT ==========
+load();
+document.getElementById('fabBtn').style.display = 'flex';
+renderDashboard();
+</script>
+</body>
+</html>
