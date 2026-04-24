@@ -622,6 +622,7 @@
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head>
 <body>
 
@@ -775,6 +776,138 @@ function load() {
       if (state.genPrefs.weekDaysCount === undefined) state.genPrefs.weekDaysCount = 0;
     }
   } catch(e) {}
+}
+
+// ========== SUPABASE ==========
+const SUPABASE_URL     = "https://iishgqfrifigmsozyjid.supabase.co";
+const SUPABASE_ANON_KEY = "PUT_YOUR_ANON_KEY_HERE";
+const PROFILE_ID       = "default-profile";
+let _db = null;
+
+/*
+  SQL — run once in Supabase → SQL Editor:
+
+  create table if not exists profiles (
+    id           text primary key,
+    user_name    text default 'אורח',
+    avatar_b64   text default '',
+    monthly_goal numeric default 5000,
+    weekly_hours_goal numeric default 15,
+    gen_prefs    jsonb default '{}',
+    rates        jsonb default '[]'
+  );
+
+  create table if not exists shifts (
+    id         uuid primary key default gen_random_uuid(),
+    profile_id text not null references profiles(id) on delete cascade,
+    shift_date text not null,
+    start_time text not null,
+    end_time   text not null,
+    note       text default '',
+    created_at timestamptz default now()
+  );
+*/
+
+function _sbReady() { return _db !== null; }
+
+async function sbInit() {
+  try {
+    _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  } catch(e) { console.error('Supabase init:', e); }
+}
+
+async function sbSaveProfile() {
+  if (!_sbReady()) { save(); return; }
+  try {
+    const { error } = await _db.from('profiles').upsert({
+      id:               PROFILE_ID,
+      user_name:        state.userName,
+      avatar_b64:       state.avatar,
+      monthly_goal:     state.monthlyGoal,
+      weekly_hours_goal: state.weeklyHoursGoal,
+      gen_prefs:        state.genPrefs,
+      rates:            state.rates
+    }, { onConflict: 'id' });
+    if (error) throw error;
+    save(); // keep localStorage as mirror
+  } catch(e) { console.error('sbSaveProfile:', e); save(); }
+}
+
+async function sbLoad() {
+  if (!_sbReady()) { load(); return; }
+  try {
+    // Load profile
+    const { data: prof, error: e1 } = await _db.from('profiles').select('*').eq('id', PROFILE_ID).maybeSingle();
+    if (e1) throw e1;
+    if (prof) {
+      state.userName        = prof.user_name        ?? state.userName;
+      state.avatar          = prof.avatar_b64        ?? state.avatar;
+      state.monthlyGoal     = prof.monthly_goal      ?? state.monthlyGoal;
+      state.weeklyHoursGoal = prof.weekly_hours_goal ?? state.weeklyHoursGoal;
+      if (prof.gen_prefs && Object.keys(prof.gen_prefs).length) {
+        Object.assign(state.genPrefs, prof.gen_prefs);
+      }
+      if (Array.isArray(prof.rates) && prof.rates.length) {
+        state.rates = prof.rates;
+      }
+    }
+    // Load shifts
+    const { data: shifts, error: e2 } = await _db.from('shifts').select('*')
+      .eq('profile_id', PROFILE_ID).order('shift_date', { ascending: false });
+    if (e2) throw e2;
+    if (shifts) {
+      state.shifts = shifts.map(r => ({
+        id:    r.id,
+        date:  r.shift_date,
+        start: r.start_time,
+        end:   r.end_time,
+        note:  r.note || ''
+      }));
+    }
+    // Defaults guard
+    if (!state.rates?.length) state.rates = JSON.parse(JSON.stringify(DEFAULT_RATES));
+    if (!state.weeklyHoursGoal) state.weeklyHoursGoal = 15;
+    if (!state.genPrefs.maxShiftHours) state.genPrefs.maxShiftHours = state.genPrefs.maxDayHours || 6;
+    if (!state.genPrefs.maxDayTotalHours) state.genPrefs.maxDayTotalHours = 10;
+    if (state.genPrefs.weekDaysCount === undefined) state.genPrefs.weekDaysCount = 0;
+    save(); // mirror to localStorage
+  } catch(e) { console.error('sbLoad:', e); load(); } // fallback to localStorage
+}
+
+async function sbAddShift(shift) {
+  if (!_sbReady()) return;
+  try {
+    const { data, error } = await _db.from('shifts').insert({
+      profile_id: PROFILE_ID,
+      shift_date: shift.date,
+      start_time: shift.start,
+      end_time:   shift.end,
+      note:       shift.note || ''
+    }).select().single();
+    if (error) throw error;
+    shift.id = data.id; // use Supabase UUID
+  } catch(e) { console.error('sbAddShift:', e); }
+}
+
+async function sbUpdateShift(shift) {
+  if (!_sbReady()) return;
+  try {
+    const { error } = await _db.from('shifts').update({
+      shift_date: shift.date,
+      start_time: shift.start,
+      end_time:   shift.end,
+      note:       shift.note || ''
+    }).eq('id', shift.id).eq('profile_id', PROFILE_ID);
+    if (error) throw error;
+  } catch(e) { console.error('sbUpdateShift:', e); }
+}
+
+async function sbDeleteShift(id) {
+  if (!_sbReady()) return;
+  try {
+    const { error } = await _db.from('shifts').delete().eq('id', id).eq('profile_id', PROFILE_ID);
+    if (error) throw error;
+  } catch(e) { console.error('sbDeleteShift:', e); }
 }
 
 // ========== TIME UTILS ==========
@@ -1169,7 +1302,7 @@ function updateShiftPreview() {
 
 function closeShiftModal() { document.getElementById('shiftModal').classList.remove('open'); }
 
-document.getElementById('shiftSaveBtn').onclick = function() {
+document.getElementById('shiftSaveBtn').onclick = async function() {
   const date = document.getElementById('shiftDate').value;
   const start = document.getElementById('startH').value+':'+document.getElementById('startM').value;
   const end = document.getElementById('endH').value+':'+document.getElementById('endM').value;
@@ -1177,22 +1310,29 @@ document.getElementById('shiftSaveBtn').onclick = function() {
   if(!date) { showSnack('יש לבחור תאריך'); return; }
   if(editingShiftId) {
     const idx = state.shifts.findIndex(s=>s.id===editingShiftId);
-    if(idx>=0) state.shifts[idx] = {...state.shifts[idx], date, start, end, note};
+    if(idx>=0) {
+      state.shifts[idx] = {...state.shifts[idx], date, start, end, note};
+      await sbUpdateShift(state.shifts[idx]);
+    }
   } else {
-    state.shifts.push({ id: Date.now().toString(), date, start, end, note });
+    const s = { id: Date.now().toString(), date, start, end, note };
+    await sbAddShift(s);
+    state.shifts.unshift(s);
   }
   save(); closeShiftModal(); showSnack(editingShiftId?'משמרת עודכנה':'משמרת נוספה');
   renderPage(currentTab);
 };
 
-document.getElementById('shiftDeleteBtn').onclick = function() {
+document.getElementById('shiftDeleteBtn').onclick = async function() {
   if(!editingShiftId) return;
+  await sbDeleteShift(editingShiftId);
   state.shifts = state.shifts.filter(s=>s.id!==editingShiftId);
   save(); closeShiftModal(); showSnack('משמרת נמחקה'); renderPage(currentTab);
 };
 
-function deleteShift(id) {
+async function deleteShift(id) {
   if(!confirm('למחוק משמרת זו?')) return;
+  await sbDeleteShift(id);
   state.shifts = state.shifts.filter(s=>s.id!==id);
   save(); showSnack('משמרת נמחקה'); renderPage(currentTab);
 }
@@ -1406,28 +1546,26 @@ function renderGenerator() {
   `;
 }
 
-function updateGenGoal(v) { state.monthlyGoal=parseFloat(v)||0; save(); }
-function toggleSat(el) { el.classList.toggle('on'); state.genPrefs.includeSat=el.classList.contains('on'); save(); }
-function toggleSplit(el) { el.classList.toggle('on'); state.genPrefs.allowSplitShift=el.classList.contains('on'); save(); }
+function updateGenGoal(v) { state.monthlyGoal=parseFloat(v)||0; save(); sbSaveProfile(); }
+function toggleSat(el) { el.classList.toggle('on'); state.genPrefs.includeSat=el.classList.contains('on'); save(); sbSaveProfile(); }
+function toggleSplit(el) { el.classList.toggle('on'); state.genPrefs.allowSplitShift=el.classList.contains('on'); save(); sbSaveProfile(); }
 function togglePrefDay(i) {
-  // Clear weekDaysCount when user picks specific days
   state.genPrefs.weekDaysCount = 0;
   const idx = state.genPrefs.preferredDays.indexOf(i);
   if (idx >= 0) state.genPrefs.preferredDays.splice(idx, 1);
   else state.genPrefs.preferredDays.push(i);
-  save();
+  save(); sbSaveProfile();
 }
 function onWeekDaysCountChange(v) {
   const n = parseInt(v) || 0;
   state.genPrefs.weekDaysCount = n;
-  // Clear preferred days when user picks a count
   if (n > 0) state.genPrefs.preferredDays = [];
-  save();
+  save(); sbSaveProfile();
   renderGenerator();
 }
 
 function generateSchedules() {
-  save();
+  save(); sbSaveProfile();
   const p = state.genPrefs;
   const monthGoal = state.monthlyGoal;
 
@@ -1782,7 +1920,7 @@ function buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, to
 
 // ---- Standalone "fastest" button handler ----
 function generateFastest() {
-  save();
+  save(); sbSaveProfile();
   const p = state.genPrefs;
   const monthGoal = state.monthlyGoal;
   const MAX_SHIFT = Math.max(1, p.maxShiftHours || p.maxDayHours || 6);
@@ -1883,25 +2021,20 @@ function addHours(timeStr, hrs) {
   return minsToTime(total);
 }
 
-function addGenToJournal(encoded) {
+async function addGenToJournal(encoded) {
   try {
     const schedule = JSON.parse(decodeURIComponent(encoded));
     let added=0;
-    schedule.forEach(s => {
-      // Add both parts of a split shift, skip nothing
+    for (const s of schedule) {
       const exists = state.shifts.some(x=>x.date===s.dateStr&&x.start===s.start&&x.end===s.end);
       if(!exists) {
         const label = s.isSplitFirst ? ' (מפוצל – בוקר)' : s.isSplitSecond ? ' (מפוצל – ערב)' : '';
-        state.shifts.push({
-          id: Date.now().toString()+Math.random(),
-          date: s.dateStr,
-          start: s.start,
-          end: s.end,
-          note: 'מחולל' + label
-        });
+        const ns = { id: Date.now().toString()+Math.random(), date: s.dateStr, start: s.start, end: s.end, note: 'מחולל' + label };
+        await sbAddShift(ns);
+        state.shifts.unshift(ns);
         added++;
       }
-    });
+    }
     save(); showSnack(`${added} משמרות נוספו ליומן`);
     switchTab('journal');
   } catch(e) { showSnack('שגיאה בהוספה'); }
@@ -1939,15 +2072,15 @@ function renderSettings() {
       <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(event)">
       <div class="field">
         <label>שם משתמש</label>
-        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value;save()">
+        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value;save();sbSaveProfile()">
       </div>
       <div class="field">
         <label>יעד שכר חודשי (₪)</label>
-        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0;save()">
+        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0;save();sbSaveProfile()">
       </div>
       <div class="field">
         <label>יעד שעות שבועיות</label>
-        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15;save()">
+        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15;save();sbSaveProfile()">
       </div>
     </div>
 
@@ -1965,7 +2098,7 @@ function renderSettings() {
 function uploadAvatar(e) {
   const file = e.target.files[0]; if(!file) return;
   const r = new FileReader();
-  r.onload = ev => { state.avatar=ev.target.result; save(); renderSettings(); };
+  r.onload = async ev => { state.avatar=ev.target.result; await sbSaveProfile(); renderSettings(); };
   r.readAsDataURL(file);
 }
 
@@ -1987,17 +2120,17 @@ function openEditRate(i) {
   document.getElementById('rateModal').classList.add('open');
 }
 function closeRateModal() { document.getElementById('rateModal').classList.remove('open'); }
-function saveRate() {
+async function saveRate() {
   const idx=parseInt(document.getElementById('rateEditIdx').value);
   const r={type:document.getElementById('rateType').value,from:document.getElementById('rateFrom').value,to:document.getElementById('rateTo').value,rate:parseFloat(document.getElementById('rateAmount').value)||0};
   if(idx>=0) state.rates[idx]=r; else state.rates.push(r);
-  save(); closeRateModal(); renderSettings(); showSnack('תעריף נשמר');
+  await sbSaveProfile(); closeRateModal(); renderSettings(); showSnack('תעריף נשמר');
 }
-function deleteRate(i) {
-  state.rates.splice(i,1); save(); renderSettings(); showSnack('תעריף נמחק');
+async function deleteRate(i) {
+  state.rates.splice(i,1); await sbSaveProfile(); renderSettings(); showSnack('תעריף נמחק');
 }
-function resetRates() {
-  state.rates=JSON.parse(JSON.stringify(DEFAULT_RATES)); save(); renderSettings(); showSnack('תעריפים אופסו');
+async function resetRates() {
+  state.rates=JSON.parse(JSON.stringify(DEFAULT_RATES)); await sbSaveProfile(); renderSettings(); showSnack('תעריפים אופסו');
 }
 
 // ========== SNACKBAR ==========
@@ -2013,9 +2146,12 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 });
 
 // ========== INIT ==========
-load();
-document.getElementById('fabBtn').style.display = 'flex';
-renderDashboard();
+(async () => {
+  await sbInit();
+  await sbLoad();
+  document.getElementById('fabBtn').style.display = 'flex';
+  renderDashboard();
+})();
 </script>
 </body>
 </html>
