@@ -787,7 +787,7 @@ function load() {
 
 // ========== SUPABASE ==========
 const SUPABASE_URL = "https://iishgqfrifigmsozyjid.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_hcBlfZ6YwVjhxpaL8dXt5g_jvkRUf1J";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 const PROFILE_ID = "default-profile";
 let _db = null;
 
@@ -1405,6 +1405,65 @@ function renderStats() {
       <div class="bar-label">${dayNames[i]}</div>
     </div>`).join('');
 
+  // ---- Monthly history (last 12 months) ----
+  const now = new Date();
+  const monthHistory = [];
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const shifts = getMonthShifts(ym);
+    if (!shifts.length && i > 0) continue; // skip empty months (except current)
+    let pay=0, hrs=0;
+    shifts.forEach(s=>{ const c=shiftSummary(s); pay+=c.total; hrs+=c.hours; });
+    // Weekly average hours: count weeks that had any shift
+    const weekKeys = new Set(shifts.map(s=>getWeekKey(new Date(s.date+'T12:00:00'))));
+    const avgWeekHrs = weekKeys.size > 0 ? hrs / weekKeys.size : 0;
+    monthHistory.push({
+      ym, label: `${MONTHS_HE[d.getMonth()]} ${d.getFullYear()}`,
+      shifts: shifts.length, pay, hrs,
+      avgHourly: hrs>0 ? pay/hrs : 0,
+      avgWeekHrs,
+      isCurrent: i===0
+    });
+  }
+
+  const monthHistoryHtml = monthHistory.length ? monthHistory.map(m => `
+    <div style="border-bottom:1px solid var(--border);padding:12px 0;${m.isCurrent?'':''}">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:13px;font-weight:800;color:${m.isCurrent?'var(--green-dark)':'var(--text)'}">${m.label}${m.isCurrent?' <span style="font-size:10px;background:var(--green-light);color:var(--green-dark);padding:2px 7px;border-radius:99px;font-weight:700">נוכחי</span>':''}</span>
+        <span style="font-size:16px;font-weight:900;color:var(--green-dark)">${fmt(m.pay)} ₪</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+        <div style="background:var(--bg);border-radius:8px;padding:7px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600">משמרות</div>
+          <div style="font-size:14px;font-weight:800">${m.shifts}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:7px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600">סה"כ שעות</div>
+          <div style="font-size:14px;font-weight:800">${fmtH(m.hrs)}</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:7px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600">ממוצע שבועי</div>
+          <div style="font-size:14px;font-weight:800">${fmtH(m.avgWeekHrs)} ש'</div>
+        </div>
+        <div style="background:var(--bg);border-radius:8px;padding:7px 10px">
+          <div style="font-size:10px;color:var(--text3);font-weight:600">ממוצע לשעה</div>
+          <div style="font-size:14px;font-weight:800">${fmt(m.avgHourly)} ₪</div>
+        </div>
+      </div>
+    </div>
+  `).join('') : `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">אין היסטוריה</div>`;
+
+  // Monthly pay bar chart (last 6 months)
+  const monthChartData = [...monthHistory].reverse().slice(-6);
+  const maxM = Math.max(...monthChartData.map(m=>m.pay), 1);
+  const monthBarsHtml = monthChartData.map(m=>`
+    <div class="bar-col">
+      <div class="bar-val">${m.pay>0?Math.round(m.pay):''}</div>
+      <div class="bar-fill" style="height:${Math.max(4,(m.pay/maxM)*90)}px;${m.isCurrent?'background:linear-gradient(to top,#16a34a,#4ade80)':''}"></div>
+      <div class="bar-label">${MONTHS_HE[parseInt(m.ym.split('-')[1])-1].slice(0,3)}</div>
+    </div>`).join('');
+
   document.getElementById('page-stats').innerHTML = `
     <div class="page-header">
       <div class="page-title">סטטיסטיקות</div>
@@ -1442,6 +1501,18 @@ function renderStats() {
       <div class="chart-wrap">
         <div class="bar-chart">${dayBarsHtml}</div>
       </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">הכנסה לפי חודש (6 חודשים)</div>
+      <div class="chart-wrap">
+        <div class="bar-chart">${monthBarsHtml}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">היסטוריה חודשית</div>
+      ${monthHistoryHtml}
     </div>
   `;
 }
