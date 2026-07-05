@@ -786,9 +786,9 @@ function load() {
 }
 
 // ========== SUPABASE ==========
-const SUPABASE_URL = "https://iishgqfrifigmsozyjid.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-const PROFILE_ID = "default-profile";
+const SUPABASE_URL     = "https://iishgqfrifigmsozyjid.supabase.co";
+const SUPABASE_ANON_KEY = "PUT_YOUR_ANON_KEY_HERE";
+const PROFILE_ID       = "default-profile";
 let _db = null;
 
 /*
@@ -1088,16 +1088,41 @@ function renderDashboard() {
     ? `<div class="hero-over"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:99px;font-size:12px">✅ עברת את היעד ב־${fmt(overAmount)} ₪</span></div>`
     : `<div class="hero-over"><span style="background:rgba(0,0,0,0.15);padding:3px 10px;border-radius:99px;font-size:12px">⏳ נשארו ${fmt(Math.abs(remaining))} ₪ ליעד</span></div>`;
 
-  // Recent shifts (last 5)
-  const recent = [...state.shifts].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,5);
-  const recentHtml = recent.length ? recent.map(s => {
+  // Upcoming shifts this week (from today onwards, sorted soonest first)
+  const todayStr = getToday();
+  const todayDate = new Date(todayStr + 'T00:00:00');
+  const { end: weekEnd } = getWeekRange(0);
+  weekEnd.setHours(23,59,59);
+
+  // Also include next week if this week has few shifts
+  const { start: nextStart, end: nextEnd } = getWeekRange(1);
+  nextEnd.setHours(23,59,59);
+
+  const upcomingShifts = state.shifts
+    .filter(s => {
+      const d = new Date(s.date + 'T00:00:00');
+      return d >= todayDate && d <= nextEnd;
+    })
+    .sort((a,b) => {
+      if (a.date !== b.date) return a.date.localeCompare(b.date);
+      return a.start.localeCompare(b.start);
+    })
+    .slice(0, 7);
+
+  const upcomingHtml = upcomingShifts.length ? upcomingShifts.map((s, idx) => {
     const c = shiftSummary(s);
     const bkd = c.breakdown.map(b=>`${b.from}–${b.to} לפי ${fmt(b.rate)} ₪`).join('<br>');
+    const isToday = s.date === todayStr;
+    const isTomorrow = s.date === (() => { const d=new Date(todayDate); d.setDate(d.getDate()+1); return d.toISOString().split('T')[0]; })();
+    const dayLabel = isToday ? '📍 היום' : isTomorrow ? '⏰ מחר' : '';
     return `<div class="shift-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
         <div style="flex:1;cursor:pointer" onclick="this.closest('.shift-item').classList.toggle('expanded')">
           <div class="shift-row1" style="margin-bottom:2px">
-            <span class="shift-date">${formatDate(s.date)}</span>
+            <span class="shift-date">
+              ${dayLabel ? `<span style="font-size:10px;font-weight:700;background:${isToday?'var(--green)':'#f97316'};color:#fff;padding:1px 6px;border-radius:99px;margin-left:4px">${dayLabel}</span>` : ''}
+              ${formatDate(s.date)}
+            </span>
             <span class="shift-pay">${fmt(c.total)} ₪</span>
           </div>
           <div class="shift-row2">${s.start}–${s.end} · ${fmtH(c.hours)} שעות${s.asFriday?` · <span style="color:var(--green-dark);font-weight:700;font-size:10px">★ תעריף שישי</span>`:''}${s.note?` · <span style="color:var(--text3)">${s.note}</span>`:''}</div>
@@ -1115,7 +1140,7 @@ function renderDashboard() {
         </button>
       </div>
     </div>`;
-  }).join('') : `<div class="empty-state"><div class="icon">📋</div><p>אין משמרות עדיין<br><small>לחץ + להוספת משמרת</small></p></div>`;
+  }).join('') : `<div class="empty-state"><div class="icon">🗓️</div><p>אין משמרות קרובות השבוע<br><small>לחץ + להוספת משמרת</small></p></div>`;
 
   document.getElementById('page-dashboard').innerHTML = `
     <div class="profile-bar">
@@ -1165,8 +1190,8 @@ function renderDashboard() {
     </div>
 
     <div class="card">
-      <div class="card-title">משמרות אחרונות</div>
-      ${recentHtml}
+      <div class="card-title">משמרות קרובות</div>
+      ${upcomingHtml}
     </div>
   `;
 }
@@ -1720,12 +1745,15 @@ function generateSchedules() {
   });
 
   // ---- Make a single shift entry ----
+  // Uses isFridayOrSat based on the actual date in weekDates
   function makeShift(dayIdx, startHour, hrs) {
     const hrs_clamped = Math.max(1, Math.min(hrs, MAX_SHIFT));
     const wd = weekDates[dayIdx];
     const start = startHour;
     const end = addHours(start, hrs_clamped);
-    const c = calcShiftPay(wd.dateStr, start, end);
+    // dayIdx 5=Friday, 6=Saturday → always use friday rate
+    const useFriRate = (dayIdx === 5 || dayIdx === 6);
+    const c = calcShiftPay(wd.dateStr, start, end, useFriRate);
     return { dayIdx, dayName: DAYS_HE[dayIdx], dateStr: wd.dateStr, start, end, pay: c.total, hours: c.hours };
   }
 
@@ -2125,7 +2153,8 @@ function generateFastest() {
     const hrs_c = Math.max(1, Math.min(hrs, MAX_SHIFT));
     const wd = weekDates[dayIdx];
     const end = addHours(startHour, hrs_c);
-    const c = calcShiftPay(wd.dateStr, startHour, end);
+    const useFriRate = (dayIdx === 5 || dayIdx === 6);
+    const c = calcShiftPay(wd.dateStr, startHour, end, useFriRate);
     return { dayIdx, dayName: DAYS_HE[dayIdx], dateStr: wd.dateStr, start: startHour, end, pay: c.total, hours: c.hours };
   }
   function makeSplitPair(dayIdx, ms, es) {
