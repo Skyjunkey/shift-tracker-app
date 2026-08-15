@@ -1007,24 +1007,46 @@ function calcShiftPay(dateStr, startTime, endTime, asFriday) {
 }
 
 // ========== CURRENT PERIOD ==========
-function getToday() { return new Date().toISOString().split('T')[0]; }
-function getCurrentMonth() { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; }
-function getMonthShifts(ym) {
-  return state.shifts.filter(s => s.date.startsWith(ym));
+function dateToLocalISO(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
+
+function getToday() {
+  return dateToLocalISO(new Date());
+}
+
+function getCurrentMonth() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function getMonthShifts(ym) {
+  return state.shifts.filter(s => s.date && s.date.startsWith(ym));
+}
+
 function getWeekRange(offset=0) {
   const now = new Date();
   const day = now.getDay();
-  const sun = new Date(now); sun.setDate(now.getDate() - day + offset*7);
-  const sat = new Date(sun); sat.setDate(sun.getDate()+6);
+
+  const sun = new Date(now);
+  sun.setDate(now.getDate() - day + offset * 7);
+  sun.setHours(0, 0, 0, 0);
+
+  const sat = new Date(sun);
+  sat.setDate(sun.getDate() + 6);
+  sat.setHours(23, 59, 59, 999);
+
   return { start: sun, end: sat };
 }
+
 function getWeekShifts(offset=0) {
-  const {start, end} = getWeekRange(offset);
-  return state.shifts.filter(s => {
-    const d = new Date(s.date+'T12:00:00');
-    return d >= start && d <= end;
-  });
+  const { start, end } = getWeekRange(offset);
+  const startStr = dateToLocalISO(start);
+  const endStr = dateToLocalISO(end);
+
+  return state.shifts.filter(s =>
+    s.date && s.date >= startStr && s.date <= endStr
+  );
 }
 function shiftSummary(s) { return calcShiftPay(s.date, s.start, s.end, s.asFriday); }
 
