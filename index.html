@@ -745,7 +745,7 @@ let state = {
 
 // ========== SUPABASE CONFIG ==========
 const SUPABASE_URL      = "https://iishgqfrifigmsozyjid.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_hcBlfZ6YwVjhxpaL8dXt5g_jvkRUf1J";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpc2hna2ZyaWZpZ21zb3p5amlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzM1NDUsImV4cCI6MjA5MjYwOTU0NX0.gT0zd1ZYVD33c0bbgoxkx9fTMyXBDkxHBc5X785ITYU";
 const PROFILE_ID        = "default-profile";
 let _db = null;
 
@@ -826,7 +826,7 @@ async function sbAddShift(shift) {
       start_time: shift.start,
       end_time:   shift.end,
       note:       shift.note || '',
-      as_friday:  shift.asFriday || false
+      as_friday:  Boolean(shift.asFriday)
     }).select().single();
 
     if (error) {
@@ -858,7 +858,7 @@ async function sbUpdateShift(shift) {
       start_time: shift.start,
       end_time:   shift.end,
       note:       shift.note || '',
-      as_friday:  shift.asFriday || false
+      as_friday:  Boolean(shift.asFriday)
     }).eq('id', shift.id).eq('profile_id', PROFILE_ID);
     if (error) throw error;
   } catch(e) { console.error('sbUpdateShift:', e); }
