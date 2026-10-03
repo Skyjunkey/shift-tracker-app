@@ -815,7 +815,10 @@ async function sbLoad() {
 }
 
 async function sbAddShift(shift) {
-  if (!_sbReady()) return null;
+  if (!_sbReady()) {
+    showSnack('מסד הנתונים אינו מוכן');
+    return null;
+  }
   try {
     const { data, error } = await _db.from('shifts').insert({
       profile_id: PROFILE_ID,
@@ -826,7 +829,11 @@ async function sbAddShift(shift) {
       as_friday:  shift.asFriday || false
     }).select().single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase Error:', error);
+      showSnack('שגיאת שרת: ' + (error.message || 'שגיאה בלתי צפויה'));
+      return null;
+    }
     
     return {
       id:        data.id,
@@ -837,7 +844,8 @@ async function sbAddShift(shift) {
       asFriday:  data.as_friday || false
     };
   } catch(e) {
-    console.error('sbAddShift error:', e);
+    console.error('sbAddShift catch:', e);
+    showSnack('שגיאת תקשורת ברשת');
     return null;
   }
 }
@@ -1319,8 +1327,6 @@ document.getElementById('shiftSaveBtn').onclick = async function() {
       if (savedShift) {
         state.shifts.unshift(savedShift);
         showSnack('משמרת נשמרה בהצלחה!');
-      } else {
-        showSnack('שגיאה בשמירה בשרת!');
       }
     }
     
@@ -2282,7 +2288,7 @@ async function resetRates() {
 function showSnack(msg) {
   const s=document.getElementById('snackbar');
   s.textContent=msg; s.classList.add('show');
-  setTimeout(()=>s.classList.remove('show'),2200);
+  setTimeout(()=>s.classList.remove('show'),3000);
 }
 
 // ========== CLOSE MODALS ON BG ==========
