@@ -815,7 +815,7 @@ async function sbLoad() {
 }
 
 async function sbAddShift(shift) {
-  if (!_sbReady()) return;
+  if (!_sbReady()) return null;
   try {
     const { data, error } = await _db.from('shifts').insert({
       profile_id: PROFILE_ID,
@@ -825,9 +825,21 @@ async function sbAddShift(shift) {
       note:       shift.note || '',
       as_friday:  shift.asFriday || false
     }).select().single();
+
     if (error) throw error;
-    shift.id = data.id;
-  } catch(e) { console.error('sbAddShift:', e); }
+    
+    return {
+      id:        data.id,
+      date:      data.shift_date,
+      start:     data.start_time,
+      end:       data.end_time,
+      note:      data.note || '',
+      asFriday:  data.as_friday || false
+    };
+  } catch(e) {
+    console.error('sbAddShift error:', e);
+    return null;
+  }
 }
 
 async function sbUpdateShift(shift) {
@@ -1278,25 +1290,49 @@ function closeShiftModal() { document.getElementById('shiftModal').classList.rem
 
 document.getElementById('shiftSaveBtn').onclick = async function() {
   const date = document.getElementById('shiftDate').value;
-  const start = document.getElementById('startH').value+':'+document.getElementById('startM').value;
-  const end = document.getElementById('endH').value+':'+document.getElementById('endM').value;
+  const start = document.getElementById('startH').value + ':' + document.getElementById('startM').value;
+  const end = document.getElementById('endH').value + ':' + document.getElementById('endM').value;
   const note = document.getElementById('shiftNote').value.trim();
   const asFriday = document.getElementById('shiftAsFriday').checked;
-  if(!date) { showSnack('יש לבחור תאריך'); return; }
   
-  if(editingShiftId) {
-    const idx = state.shifts.findIndex(s=>s.id===editingShiftId);
-    if(idx>=0) {
-      state.shifts[idx] = {...state.shifts[idx], date, start, end, note, asFriday};
-      await sbUpdateShift(state.shifts[idx]);
-    }
-  } else {
-    const s = { id: Date.now().toString(), date, start, end, note, asFriday };
-    await sbAddShift(s);
-    state.shifts.unshift(s);
+  if (!date) { 
+    showSnack('יש לבחור תאריך'); 
+    return; 
   }
-  closeShiftModal(); showSnack(editingShiftId?'משמרת עודכנה':'משמרת נוספה');
-  renderPage(currentTab);
+
+  const btn = this;
+  btn.disabled = true;
+  btn.textContent = 'שומר...';
+
+  try {
+    if (editingShiftId) {
+      const idx = state.shifts.findIndex(s => s.id === editingShiftId);
+      if (idx >= 0) {
+        state.shifts[idx] = { ...state.shifts[idx], date, start, end, note, asFriday };
+        await sbUpdateShift(state.shifts[idx]);
+        showSnack('משמרת עודכנה בהצלחה');
+      }
+    } else {
+      const newShiftInput = { date, start, end, note, asFriday };
+      const savedShift = await sbAddShift(newShiftInput);
+
+      if (savedShift) {
+        state.shifts.unshift(savedShift);
+        showSnack('משמרת נשמרה בהצלחה!');
+      } else {
+        showSnack('שגיאה בשמירה בשרת!');
+      }
+    }
+    
+    closeShiftModal();
+    renderPage(currentTab);
+  } catch (err) {
+    console.error('Error saving shift:', err);
+    showSnack('אירעה שגיאה בחיבור');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'שמור משמרת';
+  }
 };
 
 document.getElementById('shiftDeleteBtn').onclick = async function() {
@@ -2134,10 +2170,12 @@ async function addGenToJournal(encoded) {
       const exists = state.shifts.some(x=>x.date===s.dateStr&&x.start===s.start&&x.end===s.end);
       if(!exists) {
         const label = s.isSplitFirst ? ' (מפוצל – בוקר)' : s.isSplitSecond ? ' (מפוצל – ערב)' : '';
-        const ns = { id: Date.now().toString()+Math.random(), date: s.dateStr, start: s.start, end: s.end, note: 'מחולל' + label, asFriday: s.asFriday || isFridayOrSat(s.dateStr) };
-        await sbAddShift(ns);
-        state.shifts.unshift(ns);
-        added++;
+        const ns = { date: s.dateStr, start: s.start, end: s.end, note: 'מחולל' + label, asFriday: s.asFriday || isFridayOrSat(s.dateStr) };
+        const savedShift = await sbAddShift(ns);
+        if (savedShift) {
+          state.shifts.unshift(savedShift);
+          added++;
+        }
       }
     }
     showSnack(`${added} משמרות נוספו ליומן`);
@@ -2156,7 +2194,7 @@ function renderSettings() {
         <span class="rate-time">${r.from}–${r.to}</span>
         <span class="rate-amount">${fmt(r.rate)} ₪</span>
       </div>
-      <button class="rate-edit" onclick="openEditRate(${i})">✏️️</button>
+      <button class="rate-edit" onclick="openEditRate(${i})">✏</button>
       <button class="rate-del" onclick="deleteRate(${i})">🗑</button>
     </div>`).join('');
 
