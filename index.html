@@ -584,6 +584,14 @@
   .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
   .empty-state p { font-size: 14px; }
 
+  .loading-box {
+    text-align: center;
+    padding: 40px 20px;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--green-dark);
+  }
+
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
@@ -731,6 +739,7 @@ let state = {
   weeklyHoursGoal: 15,
   rates: JSON.parse(JSON.stringify(DEFAULT_RATES)),
   shifts: [],
+  isLoading: true,
   genPrefs: { minWeekHours:15, maxDayHours:6, maxShiftHours:6, maxDayTotalHours:10, includeSat:true, fridayNight:'full', minNightShifts:0, preferredDays:[], weekDaysCount:0, preferredHour:'19:00', allowSplitShift:false, allowDeepNight:false, splitStarts:['09:00','19:00',''] }
 };
 
@@ -744,7 +753,7 @@ function _sbReady() { return _db !== null; }
 
 async function sbInit() {
   try {
-    if (SUPABASE_ANON_KEY !== "YOUR_ACTUAL_ANON_KEY_HERE" && window.supabase) {
+    if (window.supabase) {
       _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
   } catch(e) { console.error('Supabase init:', e); }
@@ -768,6 +777,7 @@ async function sbSaveProfile() {
 
 async function sbLoad() {
   if (!_sbReady()) return;
+  state.isLoading = true;
   try {
     const { data: prof, error: e1 } = await _db.from('profiles').select('*').eq('id', PROFILE_ID).maybeSingle();
     if (e1) throw e1;
@@ -796,7 +806,12 @@ async function sbLoad() {
         asFriday:  r.as_friday || false
       }));
     }
-  } catch(e) { console.error('sbLoad:', e); }
+  } catch(e) { 
+    console.error('sbLoad:', e); 
+  } finally {
+    state.isLoading = false;
+    renderPage(currentTab);
+  }
 }
 
 async function sbAddShift(shift) {
@@ -965,6 +980,10 @@ function switchTab(tab) {
 }
 
 function renderPage(tab) {
+  if (state.isLoading) {
+    document.getElementById('page-'+tab).innerHTML = `<div class="loading-box">⏳ טוען נתונים מ-Supabase...</div>`;
+    return;
+  }
   if (tab==='dashboard') renderDashboard();
   else if (tab==='journal') renderJournal();
   else if (tab==='stats') renderStats();
@@ -974,6 +993,8 @@ function renderPage(tab) {
 
 // ========== DASHBOARD ==========
 function renderDashboard() {
+  if (state.isLoading) return;
+
   const ym = getCurrentMonth();
   const shifts = getMonthShifts(ym);
   let totalPay = 0, totalHours = 0;
@@ -1112,6 +1133,8 @@ function renderDashboard() {
 
 // ========== JOURNAL ==========
 function renderJournal() {
+  if (state.isLoading) return;
+
   const {start, end} = getWeekRange(weekOffset);
   const startStr = `${start.getDate()}/${start.getMonth()+1}`;
   const endStr = `${end.getDate()}/${end.getMonth()+1}`;
@@ -1294,6 +1317,8 @@ document.getElementById('fabBtn').onclick = () => openAddShift(null);
 
 // ========== STATS ==========
 function renderStats() {
+  if (state.isLoading) return;
+
   const ym = getCurrentMonth();
   const mShifts = getMonthShifts(ym);
   let mPay=0,mHrs=0,mNight=0,mFriSat=0;
@@ -1462,6 +1487,8 @@ function getWeekKey(d) {
 
 // ========== GENERATOR ==========
 function renderGenerator() {
+  if (state.isLoading) return;
+
   const p = state.genPrefs;
   const goal = state.monthlyGoal;
 
@@ -2120,6 +2147,8 @@ async function addGenToJournal(encoded) {
 
 // ========== SETTINGS ==========
 function renderSettings() {
+  if (state.isLoading) return;
+
   const ratesHtml = state.rates.map((r,i)=>`
     <div class="rate-row">
       <div class="rate-info">
@@ -2127,7 +2156,7 @@ function renderSettings() {
         <span class="rate-time">${r.from}–${r.to}</span>
         <span class="rate-amount">${fmt(r.rate)} ₪</span>
       </div>
-      <button class="rate-edit" onclick="openEditRate(${i})">✏️</button>
+      <button class="rate-edit" onclick="openEditRate(${i})">✏️️</button>
       <button class="rate-del" onclick="deleteRate(${i})">🗑</button>
     </div>`).join('');
 
@@ -2228,7 +2257,6 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
   await sbInit();
   await sbLoad();
   document.getElementById('fabBtn').style.display = 'flex';
-  renderDashboard();
 })();
 </script>
 </body>
