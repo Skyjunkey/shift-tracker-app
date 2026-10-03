@@ -170,25 +170,12 @@
     position: relative;
     color: #ffffff;
   }
-  .hero-amount.red { color: #ffffff; }
-  .hero-amount.green { color: #ffffff; }
   .hero-over {
     font-size: 13px;
     font-weight: 700;
     color: #ffffff;
     margin-bottom: 10px;
   }
-  .hero-over.red-text { color: #ffffff; }
-  .hero-status-bar {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 10px;
-  }
-  .hero-status-dot {
-    width: 10px; height: 10px; border-radius: 50%;
-    flex-shrink: 0;
-  }
-  .hero-status-dot.red { background: rgba(252,165,165,0.9); }
-  .hero-status-dot.green { background: rgba(187,247,208,0.9); }
   .progress-bar-wrap {
     background: rgba(0,0,0,0.15);
     border-radius: 99px;
@@ -409,13 +396,6 @@
   }
 
   /* ===== STATS ===== */
-  .stats-section { margin: 0 16px 14px; }
-  .stats-section-title {
-    font-size: 13px; font-weight: 700;
-    color: var(--text2);
-    margin-bottom: 10px;
-    padding-right: 4px;
-  }
   .stat-row {
     display: flex; justify-content: space-between; align-items: center;
     padding: 10px 0;
@@ -466,7 +446,6 @@
     border: 2px solid transparent;
     transition: border-color .2s;
   }
-  .gen-result-card.best { border-color: var(--green); }
   .gen-header {
     padding: 14px 16px 10px;
     display: flex; justify-content: space-between; align-items: center;
@@ -480,7 +459,6 @@
     color: var(--green-dark);
   }
   .gen-body { padding: 0 16px 14px; }
-  .gen-schedule { font-size: 12px; color: var(--text2); line-height: 2; }
   .gen-stats-row {
     display: flex; gap: 8px; margin-top: 10px;
   }
@@ -499,7 +477,6 @@
     border-radius: 8px;
   }
   .gen-diff.over { background: var(--green-light); color: var(--green-dark); }
-  .gen-diff.under { background: var(--red-light); color: var(--red); }
   .gen-add-btn {
     width: calc(100% - 32px);
     margin: 4px 16px 14px;
@@ -515,7 +492,6 @@
   .gen-add-btn:active { transform: scale(.97); }
 
   /* ===== SETTINGS ===== */
-  .settings-section { margin: 0 16px 16px; }
   .rate-row {
     display: flex;
     align-items: center;
@@ -532,9 +508,7 @@
   .rate-del {
     background: none; border: none; cursor: pointer;
     color: var(--text3); font-size: 16px; padding: 4px;
-    transition: color .15s;
   }
-  .rate-del:hover { color: var(--red); }
   .rate-edit {
     background: none; border: none; cursor: pointer;
     color: var(--text3); font-size: 14px; padding: 4px;
@@ -585,14 +559,6 @@
   .upload-hint { font-size: 12px; color: var(--text3); }
   #avatarInput { display: none; }
 
-  /* Section divider */
-  .sec-div {
-    font-size: 11px; font-weight: 700;
-    color: var(--text3); text-transform: uppercase;
-    letter-spacing: .6px;
-    margin: 18px 16px 8px;
-  }
-
   /* Snackbar */
   .snackbar {
     position: fixed;
@@ -610,7 +576,6 @@
   }
   .snackbar.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
-  /* Empty state */
   .empty-state {
     text-align: center;
     padding: 40px 20px;
@@ -619,7 +584,6 @@
   .empty-state .icon { font-size: 40px; margin-bottom: 10px; }
   .empty-state p { font-size: 14px; }
 
-  /* Scrollbar */
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
@@ -770,26 +734,9 @@ let state = {
   genPrefs: { minWeekHours:15, maxDayHours:6, maxShiftHours:6, maxDayTotalHours:10, includeSat:true, fridayNight:'full', minNightShifts:0, preferredDays:[], weekDaysCount:0, preferredHour:'19:00', allowSplitShift:false, allowDeepNight:false, splitStarts:['09:00','19:00',''] }
 };
 
-function save() { try { localStorage.setItem('mishmarot_v2', JSON.stringify(state)); } catch(e){} }
-function load() {
-  try {
-    const d = localStorage.getItem('mishmarot_v2');
-    if (d) {
-      const p = JSON.parse(d);
-      Object.assign(state, p);
-      if (!state.rates?.length) state.rates = JSON.parse(JSON.stringify(DEFAULT_RATES));
-      if (!state.weeklyHoursGoal) state.weeklyHoursGoal = 15;
-      if (!state.genPrefs.maxShiftHours) state.genPrefs.maxShiftHours = state.genPrefs.maxDayHours || 6;
-      if (!state.genPrefs.maxDayTotalHours) state.genPrefs.maxDayTotalHours = 10;
-      if (state.genPrefs.weekDaysCount === undefined) state.genPrefs.weekDaysCount = 0;
-      if (!state.genPrefs.splitStarts) state.genPrefs.splitStarts = ['09:00','19:00',''];
-    }
-  } catch(e) {}
-}
-
-// ========== SUPABASE ==========
+// ========== SUPABASE CONFIG ==========
 const SUPABASE_URL      = "https://iishgqfrifigmsozyjid.supabase.co";
-const SUPABASE_ANON_KEY = "PUT_YOUR_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlpc2hna2ZyaWZpZ21zb3p5amlkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzcwMzM1NDUsImV4cCI6MjA5MjYwOTU0NX0.gT0zd1ZYVD33c0bbgoxkx9fTMyXBDkxHBc5X785ITYU";
 const PROFILE_ID        = "default-profile";
 let _db = null;
 
@@ -797,31 +744,31 @@ function _sbReady() { return _db !== null; }
 
 async function sbInit() {
   try {
-    _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    if (SUPABASE_ANON_KEY !== "YOUR_ACTUAL_ANON_KEY_HERE" && window.supabase) {
+      _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
   } catch(e) { console.error('Supabase init:', e); }
 }
 
 async function sbSaveProfile() {
-  if (!_sbReady()) { save(); return; }
+  if (!_sbReady()) return;
   try {
     const { error } = await _db.from('profiles').upsert({
-      id:               PROFILE_ID,
-      user_name:        state.userName,
-      avatar_b64:       state.avatar,
-      monthly_goal:     state.monthlyGoal,
+      id:                PROFILE_ID,
+      user_name:         state.userName,
+      avatar_b64:        state.avatar,
+      monthly_goal:      state.monthlyGoal,
       weekly_hours_goal: state.weeklyHoursGoal,
-      gen_prefs:        state.genPrefs,
-      rates:            state.rates
+      gen_prefs:         state.genPrefs,
+      rates:             state.rates
     }, { onConflict: 'id' });
     if (error) throw error;
-    save(); // keep localStorage as mirror
-  } catch(e) { console.error('sbSaveProfile:', e); save(); }
+  } catch(e) { console.error('sbSaveProfile:', e); }
 }
 
 async function sbLoad() {
-  if (!_sbReady()) { load(); return; }
+  if (!_sbReady()) return;
   try {
-    // Load profile
     const { data: prof, error: e1 } = await _db.from('profiles').select('*').eq('id', PROFILE_ID).maybeSingle();
     if (e1) throw e1;
     if (prof) {
@@ -836,7 +783,6 @@ async function sbLoad() {
         state.rates = prof.rates;
       }
     }
-    // Load shifts
     const { data: shifts, error: e2 } = await _db.from('shifts').select('*')
       .eq('profile_id', PROFILE_ID).order('shift_date', { ascending: false });
     if (e2) throw e2;
@@ -850,14 +796,7 @@ async function sbLoad() {
         asFriday:  r.as_friday || false
       }));
     }
-    // Defaults guard
-    if (!state.rates?.length) state.rates = JSON.parse(JSON.stringify(DEFAULT_RATES));
-    if (!state.weeklyHoursGoal) state.weeklyHoursGoal = 15;
-    if (!state.genPrefs.maxShiftHours) state.genPrefs.maxShiftHours = state.genPrefs.maxDayHours || 6;
-    if (!state.genPrefs.maxDayTotalHours) state.genPrefs.maxDayTotalHours = 10;
-    if (state.genPrefs.weekDaysCount === undefined) state.genPrefs.weekDaysCount = 0;
-    save(); // mirror to localStorage
-  } catch(e) { console.error('sbLoad:', e); load(); } // fallback to localStorage
+  } catch(e) { console.error('sbLoad:', e); }
 }
 
 async function sbAddShift(shift) {
@@ -872,7 +811,7 @@ async function sbAddShift(shift) {
       as_friday:  shift.asFriday || false
     }).select().single();
     if (error) throw error;
-    shift.id = data.id; // use Supabase UUID
+    shift.id = data.id;
   } catch(e) { console.error('sbAddShift:', e); }
 }
 
@@ -914,18 +853,16 @@ function isFridayOrSat(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   return d.getDay()===5 || d.getDay()===6;
 }
-function getDayOfWeek(dateStr) { return new Date(dateStr+'T12:00:00').getDay(); }
 
 // ========== WAGE CALC ==========
 function calcShiftPay(dateStr, startTime, endTime, asFriday) {
-  // אם asFriday סומן בפירוש כ-true או שהיום הוא יום שישי/שבת – משתמשים בתעריפי שישי/שבת
   const isFri = Boolean(asFriday) || isFridayOrSat(dateStr);
   const rates = state.rates.filter(r => r.type === (isFri ? 'friday' : 'regular'));
   if (!rates.length) return { total:0, hours:0, breakdown:[] };
 
   let startM = timeToMins(startTime);
   let endM = timeToMins(endTime);
-  if (endM <= startM) endM += 24*60; // crosses midnight
+  if (endM <= startM) endM += 24*60;
 
   const totalHours = (endM - startM) / 60;
   let remaining = endM - startM;
@@ -933,7 +870,6 @@ function calcShiftPay(dateStr, startTime, endTime, asFriday) {
   let totalPay = 0;
   const breakdown = [];
 
-  // Build full-day rate timeline (2 days to handle midnight crossing)
   const timeline = [];
   for (let day = 0; day < 2; day++) {
     rates.forEach(r => {
@@ -943,7 +879,6 @@ function calcShiftPay(dateStr, startTime, endTime, asFriday) {
       timeline.push({ from: rFrom, to: rTo, rate: r.rate });
     });
   }
-  // Also add next-day rates for crossing midnight
   rates.forEach(r => {
     let rFrom = timeToMins(r.from) + 48*60;
     let rTo = timeToMins(r.to) + 48*60;
@@ -1049,14 +984,12 @@ function renderDashboard() {
   const pct = Math.min(100, (totalPay/goal)*100);
   const avgHourly = totalHours>0 ? totalPay/totalHours : 0;
 
-  // Week stats
   const weekShifts = getWeekShifts(0);
   let weekPay=0, weekHours=0;
   weekShifts.forEach(s=>{const c=shiftSummary(s);weekPay+=c.total;weekHours+=c.hours;});
   const weekGoal = goal/4.33;
   const weekMissing = weekGoal - weekPay;
 
-  // Weekly hours goal
   const wHoursGoal = state.weeklyHoursGoal || 15;
   const wHoursMissing = wHoursGoal - weekHours;
 
@@ -1075,10 +1008,7 @@ function renderDashboard() {
 
   const todayStr = getToday();
   const todayDate = new Date(todayStr + 'T00:00:00');
-  const { end: weekEnd } = getWeekRange(0);
-  weekEnd.setHours(23,59,59);
-
-  const { start: nextStart, end: nextEnd } = getWeekRange(1);
+  const { end: nextEnd } = getWeekRange(1);
   nextEnd.setHours(23,59,59);
 
   const upcomingShifts = state.shifts
@@ -1330,6 +1260,7 @@ document.getElementById('shiftSaveBtn').onclick = async function() {
   const note = document.getElementById('shiftNote').value.trim();
   const asFriday = document.getElementById('shiftAsFriday').checked;
   if(!date) { showSnack('יש לבחור תאריך'); return; }
+  
   if(editingShiftId) {
     const idx = state.shifts.findIndex(s=>s.id===editingShiftId);
     if(idx>=0) {
@@ -1341,7 +1272,7 @@ document.getElementById('shiftSaveBtn').onclick = async function() {
     await sbAddShift(s);
     state.shifts.unshift(s);
   }
-  save(); closeShiftModal(); showSnack(editingShiftId?'משמרת עודכנה':'משמרת נוספה');
+  closeShiftModal(); showSnack(editingShiftId?'משמרת עודכנה':'משמרת נוספה');
   renderPage(currentTab);
 };
 
@@ -1349,14 +1280,14 @@ document.getElementById('shiftDeleteBtn').onclick = async function() {
   if(!editingShiftId) return;
   await sbDeleteShift(editingShiftId);
   state.shifts = state.shifts.filter(s=>s.id!==editingShiftId);
-  save(); closeShiftModal(); showSnack('משמרת נמחקה'); renderPage(currentTab);
+  closeShiftModal(); showSnack('משמרת נמחקה'); renderPage(currentTab);
 };
 
 async function deleteShift(id) {
   if(!confirm('למחוק משמרת זו?')) return;
   await sbDeleteShift(id);
   state.shifts = state.shifts.filter(s=>s.id!==id);
-  save(); showSnack('משמרת נמחקה'); renderPage(currentTab);
+  showSnack('משמרת נמחקה'); renderPage(currentTab);
 }
 
 document.getElementById('fabBtn').onclick = () => openAddShift(null);
@@ -1389,7 +1320,6 @@ function renderStats() {
   const bestDay=Object.entries(dayMap).sort((a,b)=>b[1]-a[1])[0];
   const bestWeek=Object.entries(weekMap).sort((a,b)=>b[1]-a[1])[0];
 
-  // Build week chart (last 6 weeks)
   const weekChartData=[];
   for(let i=5;i>=0;i--){
     const ws=getWeekShifts(-i);
@@ -1405,7 +1335,6 @@ function renderStats() {
       <div class="bar-label">${d.label}</div>
     </div>`).join('');
 
-  // Day chart
   const dayNames=['א','ב','ג','ד','ה','ו','ש'];
   const maxD=Math.max(...Object.values(dayMap),1);
   const dayBarsHtml=[0,1,2,3,4,5,6].map(i=>`
@@ -1415,7 +1344,6 @@ function renderStats() {
       <div class="bar-label">${dayNames[i]}</div>
     </div>`).join('');
 
-  // ---- Monthly history (last 12 months) ----
   const now = new Date();
   const monthHistory = [];
   for (let i = 0; i < 12; i++) {
@@ -1657,38 +1585,38 @@ function renderGenerator() {
   `;
 }
 
-function updateGenGoal(v) { state.monthlyGoal=parseFloat(v)||0; save(); sbSaveProfile(); }
-function toggleDeepNight(el) { el.classList.toggle('on'); state.genPrefs.allowDeepNight=el.classList.contains('on'); save(); sbSaveProfile(); }
-function toggleSat(el) { el.classList.toggle('on'); state.genPrefs.includeSat=el.classList.contains('on'); save(); sbSaveProfile(); }
+function updateGenGoal(v) { state.monthlyGoal=parseFloat(v)||0; sbSaveProfile(); }
+function toggleDeepNight(el) { el.classList.toggle('on'); state.genPrefs.allowDeepNight=el.classList.contains('on'); sbSaveProfile(); }
+function toggleSat(el) { el.classList.toggle('on'); state.genPrefs.includeSat=el.classList.contains('on'); sbSaveProfile(); }
 function toggleSplit(el) {
   el.classList.toggle('on');
   state.genPrefs.allowSplitShift=el.classList.contains('on');
   if (!state.genPrefs.splitStarts) state.genPrefs.splitStarts=['09:00','19:00',''];
-  save(); sbSaveProfile();
+  sbSaveProfile();
   renderGenerator();
 }
 function setSplitStart(idx, val) {
   if (!state.genPrefs.splitStarts) state.genPrefs.splitStarts=['09:00','19:00',''];
   state.genPrefs.splitStarts[idx] = val;
-  save(); sbSaveProfile();
+  sbSaveProfile();
 }
 function togglePrefDay(i) {
   state.genPrefs.weekDaysCount = 0;
   const idx = state.genPrefs.preferredDays.indexOf(i);
   if (idx >= 0) state.genPrefs.preferredDays.splice(idx, 1);
   else state.genPrefs.preferredDays.push(i);
-  save(); sbSaveProfile();
+  sbSaveProfile();
 }
 function onWeekDaysCountChange(v) {
   const n = parseInt(v) || 0;
   state.genPrefs.weekDaysCount = n;
   if (n > 0) state.genPrefs.preferredDays = [];
-  save(); sbSaveProfile();
+  sbSaveProfile();
   renderGenerator();
 }
 
 function generateSchedules() {
-  save(); sbSaveProfile();
+  sbSaveProfile();
   const p = state.genPrefs;
   const monthGoal = state.monthlyGoal;
 
@@ -2071,7 +1999,7 @@ function buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, to
 }
 
 function generateFastest() {
-  save(); sbSaveProfile();
+  sbSaveProfile();
   const p = state.genPrefs;
   const monthGoal = state.monthlyGoal;
   const MAX_SHIFT = Math.max(1, p.maxShiftHours || p.maxDayHours || 6);
@@ -2185,7 +2113,7 @@ async function addGenToJournal(encoded) {
         added++;
       }
     }
-    save(); showSnack(`${added} משמרות נוספו ליומן`);
+    showSnack(`${added} משמרות נוספו ליומן`);
     switchTab('journal');
   } catch(e) { showSnack('שגיאה בהוספה'); }
 }
@@ -2222,15 +2150,15 @@ function renderSettings() {
       <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(event)">
       <div class="field">
         <label>שם משתמש</label>
-        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value;save();sbSaveProfile()">
+        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value;sbSaveProfile()">
       </div>
       <div class="field">
         <label>יעד שכר חודשי (₪)</label>
-        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0;save();sbSaveProfile()">
+        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0;sbSaveProfile()">
       </div>
       <div class="field">
         <label>יעד שעות שבועיות</label>
-        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15;save();sbSaveProfile()">
+        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15;sbSaveProfile()">
       </div>
     </div>
 
