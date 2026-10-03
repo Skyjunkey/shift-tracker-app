@@ -749,14 +749,21 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 const PROFILE_ID        = "default-profile";
 let _db = null;
 
-function _sbReady() { return _db !== null; }
+function _sbReady() { 
+  return _db !== null && typeof _db.from === 'function'; 
+}
 
 async function sbInit() {
   try {
     if (window.supabase) {
-      _db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      const cleanUrl = SUPABASE_URL.trim();
+      const cleanKey = SUPABASE_ANON_KEY.trim();
+      _db = window.supabase.createClient(cleanUrl, cleanKey);
+      console.log('Supabase initialized successfully');
     }
-  } catch(e) { console.error('Supabase init:', e); }
+  } catch(e) { 
+    console.error('Supabase init error:', e); 
+  }
 }
 
 async function sbSaveProfile() {
@@ -2298,9 +2305,21 @@ document.querySelectorAll('.modal-overlay').forEach(m=>{
 
 // ========== INIT ==========
 (async () => {
-  await sbInit();
-  await sbLoad();
-  document.getElementById('fabBtn').style.display = 'flex';
+  try {
+    await sbInit();
+    if (_sbReady()) {
+      await sbLoad();
+    } else {
+      showSnack('שגיאה בהתחברות ל-Supabase. נסה לרענן');
+    }
+  } catch (err) {
+    console.error('Initialization error:', err);
+    showSnack('שגיאה בטעינת הנתונים');
+  } finally {
+    state.isLoading = false;
+    document.getElementById('fabBtn').style.display = 'flex';
+    renderPage(currentTab);
+  }
 })();
 </script>
 </body>
