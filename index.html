@@ -189,6 +189,8 @@
   }
   .hero-status-dot.red { background: rgba(252,165,165,0.9); }
   .hero-status-dot.green { background: rgba(187,247,208,0.9); }
+  .progress-bar-wrap {
+    background: rgba(0,0,0,0.15);
     border-radius: 99px;
     height: 8px;
     margin-bottom: 10px;
@@ -786,34 +788,10 @@ function load() {
 }
 
 // ========== SUPABASE ==========
-const SUPABASE_URL     = "https://iishgqfrifigmsozyjid.supabase.co";
+const SUPABASE_URL      = "https://iishgqfrifigmsozyjid.supabase.co";
 const SUPABASE_ANON_KEY = "PUT_YOUR_ANON_KEY_HERE";
-const PROFILE_ID       = "default-profile";
+const PROFILE_ID        = "default-profile";
 let _db = null;
-
-/*
-  SQL — run once in Supabase → SQL Editor:
-
-  create table if not exists profiles (
-    id           text primary key,
-    user_name    text default 'אורח',
-    avatar_b64   text default '',
-    monthly_goal numeric default 5000,
-    weekly_hours_goal numeric default 15,
-    gen_prefs    jsonb default '{}',
-    rates        jsonb default '[]'
-  );
-
-  create table if not exists shifts (
-    id         uuid primary key default gen_random_uuid(),
-    profile_id text not null references profiles(id) on delete cascade,
-    shift_date text not null,
-    start_time text not null,
-    end_time   text not null,
-    note       text default '',
-    created_at timestamptz default now()
-  );
-*/
 
 function _sbReady() { return _db !== null; }
 
@@ -864,11 +842,12 @@ async function sbLoad() {
     if (e2) throw e2;
     if (shifts) {
       state.shifts = shifts.map(r => ({
-        id:    r.id,
-        date:  r.shift_date,
-        start: r.start_time,
-        end:   r.end_time,
-        note:  r.note || ''
+        id:        r.id,
+        date:      r.shift_date,
+        start:     r.start_time,
+        end:       r.end_time,
+        note:      r.note || '',
+        asFriday:  r.as_friday || false
       }));
     }
     // Defaults guard
@@ -889,7 +868,8 @@ async function sbAddShift(shift) {
       shift_date: shift.date,
       start_time: shift.start,
       end_time:   shift.end,
-      note:       shift.note || ''
+      note:       shift.note || '',
+      as_friday:  shift.asFriday || false
     }).select().single();
     if (error) throw error;
     shift.id = data.id; // use Supabase UUID
@@ -903,7 +883,8 @@ async function sbUpdateShift(shift) {
       shift_date: shift.date,
       start_time: shift.start,
       end_time:   shift.end,
-      note:       shift.note || ''
+      note:       shift.note || '',
+      as_friday:  shift.asFriday || false
     }).eq('id', shift.id).eq('profile_id', PROFILE_ID);
     if (error) throw error;
   } catch(e) { console.error('sbUpdateShift:', e); }
@@ -937,7 +918,8 @@ function getDayOfWeek(dateStr) { return new Date(dateStr+'T12:00:00').getDay(); 
 
 // ========== WAGE CALC ==========
 function calcShiftPay(dateStr, startTime, endTime, asFriday) {
-  const isFri = asFriday !== undefined ? asFriday : isFridayOrSat(dateStr);
+  // אם asFriday סומן בפירוש כ-true או שהיום הוא יום שישי/שבת – משתמשים בתעריפי שישי/שבת
+  const isFri = Boolean(asFriday) || isFridayOrSat(dateStr);
   const rates = state.rates.filter(r => r.type === (isFri ? 'friday' : 'regular'));
   if (!rates.length) return { total:0, hours:0, breakdown:[] };
 
@@ -970,10 +952,8 @@ function calcShiftPay(dateStr, startTime, endTime, asFriday) {
   });
 
   while (remaining > 0) {
-    // find rate for current minute
     let seg = timeline.find(r => current >= r.from && current < r.to);
     if (!seg) {
-      // fallback: base rate
       seg = { from: current, to: current + remaining, rate: rates[0]?.rate || 0 };
     }
     const segEnd = Math.min(seg.to, current + remaining);
@@ -992,7 +972,6 @@ function calcShiftPay(dateStr, startTime, endTime, asFriday) {
     current = segEnd;
   }
 
-  // Merge consecutive segments with same rate
   const merged = [];
   breakdown.forEach(b => {
     const last = merged[merged.length-1];
@@ -1094,13 +1073,11 @@ function renderDashboard() {
     ? `<div class="hero-over"><span style="background:rgba(255,255,255,0.2);padding:3px 10px;border-radius:99px;font-size:12px">✅ עברת את היעד ב־${fmt(overAmount)} ₪</span></div>`
     : `<div class="hero-over"><span style="background:rgba(0,0,0,0.15);padding:3px 10px;border-radius:99px;font-size:12px">⏳ נשארו ${fmt(Math.abs(remaining))} ₪ ליעד</span></div>`;
 
-  // Upcoming shifts this week (from today onwards, sorted soonest first)
   const todayStr = getToday();
   const todayDate = new Date(todayStr + 'T00:00:00');
   const { end: weekEnd } = getWeekRange(0);
   weekEnd.setHours(23,59,59);
 
-  // Also include next week if this week has few shifts
   const { start: nextStart, end: nextEnd } = getWeekRange(1);
   nextEnd.setHours(23,59,59);
 
@@ -1115,12 +1092,13 @@ function renderDashboard() {
     })
     .slice(0, 7);
 
-  const upcomingHtml = upcomingShifts.length ? upcomingShifts.map((s, idx) => {
+  const upcomingHtml = upcomingShifts.length ? upcomingShifts.map((s) => {
     const c = shiftSummary(s);
     const bkd = c.breakdown.map(b=>`${b.from}–${b.to} לפי ${fmt(b.rate)} ₪`).join('<br>');
     const isToday = s.date === todayStr;
     const isTomorrow = s.date === (() => { const d=new Date(todayDate); d.setDate(d.getDate()+1); return dateToLocalISO(d); })();
     const dayLabel = isToday ? '📍 היום' : isTomorrow ? '⏰ מחר' : '';
+    const isFri = s.asFriday || isFridayOrSat(s.date);
     return `<div class="shift-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3px">
         <div style="flex:1;cursor:pointer" onclick="this.closest('.shift-item').classList.toggle('expanded')">
@@ -1131,7 +1109,7 @@ function renderDashboard() {
             </span>
             <span class="shift-pay">${fmt(c.total)} ₪</span>
           </div>
-          <div class="shift-row2">${s.start}–${s.end} · ${fmtH(c.hours)} שעות${s.asFriday?` · <span style="color:var(--green-dark);font-weight:700;font-size:10px">★ תעריף שישי</span>`:''}${s.note?` · <span style="color:var(--text3)">${s.note}</span>`:''}</div>
+          <div class="shift-row2">${s.start}–${s.end} · ${fmtH(c.hours)} שעות${isFri?` · <span style="color:var(--green-dark);font-weight:700;font-size:10px">★ תעריף שישי</span>`:''}${s.note?` · <span style="color:var(--text3)">${s.note}</span>`:''}</div>
         </div>
         <button onclick="event.stopPropagation();editShift('${s.id}')"
           style="flex-shrink:0;margin-right:8px;padding:5px 10px;border-radius:8px;border:1.5px solid var(--border);background:#fff;font-family:Heebo,sans-serif;font-size:12px;font-weight:600;cursor:pointer;color:var(--green-dark);white-space:nowrap;margin-top:2px">
@@ -1224,7 +1202,7 @@ function renderJournal() {
     const shiftsHtml = dayShifts.length ? dayShifts.map(s=>{
       const c=shiftSummary(s);
       const bkd=c.breakdown.map(b=>`<div style="font-size:11px;color:var(--text2)">${b.from}–${b.to} לפי ${fmt(b.rate)} ₪ (${fmtH(b.hours)} שעות)</div>`).join('');
-      return `<div style="border-bottom:1px solid var(--border);padding:10px 0;last-child{border:none}">
+      return `<div style="border-bottom:1px solid var(--border);padding:10px 0;">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700">${s.start}–${s.end} · ${fmtH(c.hours)} שעות</span>
           <span style="font-size:14px;font-weight:800;color:var(--green-dark)">${fmt(c.total)} ₪</span>
@@ -1308,7 +1286,7 @@ function openAddShift(dateStr) {
   document.getElementById('shiftDeleteBtn').style.display='none';
   document.getElementById('shiftModal').classList.add('open');
   updateShiftPreview();
-  ['startH','startM','endH','endM','shiftDate'].forEach(id=>document.getElementById(id).addEventListener('change',updateShiftPreview));
+  ['startH','startM','endH','endM','shiftDate','shiftAsFriday'].forEach(id=>document.getElementById(id).addEventListener('change',updateShiftPreview));
 }
 
 function editShift(id) {
@@ -1323,11 +1301,11 @@ function editShift(id) {
   document.getElementById('startH').value=sh; document.getElementById('startM').value=sm;
   document.getElementById('endH').value=eh; document.getElementById('endM').value=em;
   document.getElementById('shiftNote').value=s.note||'';
-  document.getElementById('shiftAsFriday').checked = s.asFriday || false;
+  document.getElementById('shiftAsFriday').checked = Boolean(s.asFriday);
   document.getElementById('shiftDeleteBtn').style.display='block';
   document.getElementById('shiftModal').classList.add('open');
   updateShiftPreview();
-  ['startH','startM','endH','endM','shiftDate'].forEach(id=>document.getElementById(id).addEventListener('change',updateShiftPreview));
+  ['startH','startM','endH','endM','shiftDate','shiftAsFriday'].forEach(id=>document.getElementById(id).addEventListener('change',updateShiftPreview));
 }
 
 function updateShiftPreview() {
@@ -1336,9 +1314,10 @@ function updateShiftPreview() {
   const end = document.getElementById('endH').value+':'+document.getElementById('endM').value;
   const asFriday = document.getElementById('shiftAsFriday').checked;
   if(!date) return;
-  const c = calcShiftPay(date, start, end, asFriday || undefined);
+  const c = calcShiftPay(date, start, end, asFriday);
   const bkd = c.breakdown.map(b=>`${b.from}–${b.to} לפי ${fmt(b.rate)} ₪ (${fmtH(b.hours)} שעות)`).join('<br>');
-  const tag = asFriday ? `<span style="color:var(--green-dark);font-weight:700"> ★ תעריף שישי</span>` : '';
+  const isFri = asFriday || isFridayOrSat(date);
+  const tag = isFri ? `<span style="color:var(--green-dark);font-weight:700"> ★ תעריף שישי/שבת</span>` : '';
   document.getElementById('shiftPreview').innerHTML = `${bkd}<br><b>סה"כ: ${fmtH(c.hours)} שעות · ${fmt(c.total)} ₪</b>${tag}`;
 }
 
@@ -1441,16 +1420,15 @@ function renderStats() {
   const monthHistory = [];
   for (let i = 0; i < 12; i++) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const ym = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-    const shifts = getMonthShifts(ym);
-    if (!shifts.length && i > 0) continue; // skip empty months (except current)
+    const ymStr = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+    const shifts = getMonthShifts(ymStr);
+    if (!shifts.length && i > 0) continue;
     let pay=0, hrs=0;
     shifts.forEach(s=>{ const c=shiftSummary(s); pay+=c.total; hrs+=c.hours; });
-    // Weekly average hours: count weeks that had any shift
     const weekKeys = new Set(shifts.map(s=>getWeekKey(new Date(s.date+'T12:00:00'))));
     const avgWeekHrs = weekKeys.size > 0 ? hrs / weekKeys.size : 0;
     monthHistory.push({
-      ym, label: `${MONTHS_HE[d.getMonth()]} ${d.getFullYear()}`,
+      ym: ymStr, label: `${MONTHS_HE[d.getMonth()]} ${d.getFullYear()}`,
       shifts: shifts.length, pay, hrs,
       avgHourly: hrs>0 ? pay/hrs : 0,
       avgWeekHrs,
@@ -1459,7 +1437,7 @@ function renderStats() {
   }
 
   const monthHistoryHtml = monthHistory.length ? monthHistory.map(m => `
-    <div style="border-bottom:1px solid var(--border);padding:12px 0;${m.isCurrent?'':''}">
+    <div style="border-bottom:1px solid var(--border);padding:12px 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <span style="font-size:13px;font-weight:800;color:${m.isCurrent?'var(--green-dark)':'var(--text)'}">${m.label}${m.isCurrent?' <span style="font-size:10px;background:var(--green-light);color:var(--green-dark);padding:2px 7px;border-radius:99px;font-weight:700">נוכחי</span>':''}</span>
         <span style="font-size:16px;font-weight:900;color:var(--green-dark)">${fmt(m.pay)} ₪</span>
@@ -1485,7 +1463,6 @@ function renderStats() {
     </div>
   `).join('') : `<div style="text-align:center;padding:20px;color:var(--text3);font-size:13px">אין היסטוריה</div>`;
 
-  // Monthly pay bar chart (last 6 months)
   const monthChartData = [...monthHistory].reverse().slice(-6);
   const maxM = Math.max(...monthChartData.map(m=>m.pay), 1);
   const monthBarsHtml = monthChartData.map(m=>`
@@ -1561,13 +1538,6 @@ function renderGenerator() {
   const goal = state.monthlyGoal;
 
   const allHours = ['07:00','08:00','09:00','10:00','11:00','12:00','13:00','14:00','15:00','16:00','17:00','18:00','19:00','20:00','21:00','22:00','23:00','00:00'];
-
-  const dayOptions = ['א\'','ב\'','ג\'','ד\'','ה\'','ו\'','ש\'']
-    .map((d,i)=>`<label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer">
-      <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;border:2px solid ${p.preferredDays.includes(i)?'var(--green)':'var(--border)'};background:${p.preferredDays.includes(i)?'var(--green-light)':'#fff'};color:${p.preferredDays.includes(i)?'var(--green-dark)':'var(--text3)'};transition:all .15s" onclick="togglePrefDay(${i});renderGenerator()">
-        ${d}
-      </div>
-    </label>`).join('');
 
   document.getElementById('page-generator').innerHTML = `
     <div class="page-header">
@@ -1722,50 +1692,39 @@ function generateSchedules() {
   const p = state.genPrefs;
   const monthGoal = state.monthlyGoal;
 
-  // ---- Hard floors: always at least 1h/shift, 3h/day ----
   const MAX_SHIFT = Math.max(1, p.maxShiftHours || p.maxDayHours || 6);
   const MAX_DAY   = Math.max(3, p.maxDayTotalHours || 10);
-  const SPLIT_LEG  = Math.max(1, Math.min(MAX_SHIFT, Math.floor(MAX_DAY / 2)));
+  const SPLIT_LEG = Math.max(1, Math.min(MAX_SHIFT, Math.floor(MAX_DAY / 2)));
   const SPLIT_TOTAL = SPLIT_LEG * 2;
 
-  // ---- Resolve effective allowed days ----
-  // Priority: 1) preferredDays (specific)  2) weekDaysCount (N random best days)  3) all 7
-  let EFFECTIVE_DAYS; // array of dayIdx values allowed across ALL scenarios
+  let EFFECTIVE_DAYS;
   if (p.preferredDays.length > 0) {
-    // Exact days chosen — use only those
     EFFECTIVE_DAYS = [...p.preferredDays];
   } else if (p.weekDaysCount > 0) {
-    // Pick the N highest-paying days (fri/sat/thu first) respecting sat toggle
     const candidateOrder = p.includeSat
-      ? [5, 6, 4, 3, 2, 1, 0]   // fri, sat, thu, wed, tue, mon, sun
-      : [5, 4, 3, 2, 1, 0];      // no sat
+      ? [5, 6, 4, 3, 2, 1, 0]
+      : [5, 4, 3, 2, 1, 0];
     EFFECTIVE_DAYS = candidateOrder.slice(0, Math.min(p.weekDaysCount, candidateOrder.length));
   } else {
-    // No restriction — all 7 (sat gated by toggle)
-    EFFECTIVE_DAYS = null; // null = use scenario's own logic
+    EFFECTIVE_DAYS = null;
   }
 
-  // Get next week's Sunday
   const nextSun = getNextSunday();
   const weekDates = [0,1,2,3,4,5,6].map(i => {
     const d = new Date(nextSun); d.setDate(nextSun.getDate()+i);
     return { dayIdx: i, dateStr: dateToLocalISO(d), dayName: DAYS_HE[i] };
   });
 
-  // ---- Make a single shift entry ----
-  // Uses isFridayOrSat based on the actual date in weekDates
   function makeShift(dayIdx, startHour, hrs) {
     const hrs_clamped = Math.max(1, Math.min(hrs, MAX_SHIFT));
     const wd = weekDates[dayIdx];
     const start = startHour;
     const end = addHours(start, hrs_clamped);
-    // dayIdx 5=Friday, 6=Saturday → always use friday rate
     const useFriRate = (dayIdx === 5 || dayIdx === 6);
     const c = calcShiftPay(wd.dateStr, start, end, useFriRate);
     return { dayIdx, dayName: DAYS_HE[dayIdx], dateStr: wd.dateStr, start, end, pay: c.total, hours: c.hours };
   }
 
-  // ---- Make a split-shift pair (noon + evening) ----
   function makeSplitPair(dayIdx, morningStart, eveningStart) {
     const leg = SPLIT_LEG;
     const s1 = makeShift(dayIdx, morningStart, leg);
@@ -1776,28 +1735,24 @@ function generateSchedules() {
     ];
   }
 
-  // ---- Effective start hour for a day ----
   function startHourFor(dayIdx, rules) {
     let h = rules.startHour || p.preferredHour || '19:00';
     if (rules.noNight) h = '07:00';
     if (rules.preferNight) h = '19:00';
-    if (dayIdx === 5) { // Friday
+    if (dayIdx === 5) {
       if (p.fridayNight === 'none' || rules.noNight) h = '07:00';
       else if (p.fridayNight === 'full' && !rules.noNight) h = '19:00';
     }
     return h;
   }
 
-  // ---- Pay & goal helpers ----
   function totalWeekPay(schedule) { return schedule.reduce((a,s) => a + s.pay, 0); }
   function meetsGoal(schedule) { return (totalWeekPay(schedule) * 4.33) >= monthGoal; }
 
-  // ---- Build one day's contribution (single or split) ----
   function dayEntries(dayIdx, rules, forceSplit) {
     const startH = startHourFor(dayIdx, rules);
 
     if (rules.deepNightSplit) {
-      // Use splitStarts if set, otherwise default afternoon + deep night
       const ss = p.splitStarts && p.splitStarts[0] ? p.splitStarts : null;
       const afStart = ss ? ss[0] : '14:00';
       const dnStart = ss && ss[1] ? ss[1] : '23:00';
@@ -1807,7 +1762,6 @@ function generateSchedules() {
         { ...s1, isSplitFirst: true, pairId: dayIdx },
         { ...s2, isSplitSecond: true, pairId: dayIdx }
       ];
-      // Optional third segment
       if (ss && ss[2]) {
         const used = s1.hours + s2.hours;
         if (used + 1 <= MAX_DAY) {
@@ -1819,7 +1773,6 @@ function generateSchedules() {
     }
 
     if (forceSplit || (rules.splitShift && p.allowSplitShift)) {
-      // Use user-defined splitStarts if available
       const ss = p.splitStarts;
       const s1Start = (ss && ss[0]) ? ss[0] : (rules.noNight ? '09:00' : '13:00');
       const s2Start = (ss && ss[1]) ? ss[1] : (rules.noNight ? '15:00' : '19:00');
@@ -1829,7 +1782,6 @@ function generateSchedules() {
         { ...s1, isSplitFirst: true, pairId: dayIdx },
         { ...s2, isSplitSecond: true, pairId: dayIdx }
       ];
-      // Optional third split segment
       if (ss && ss[2]) {
         const used = s1.hours + s2.hours;
         if (used + 1 <= MAX_DAY) {
@@ -1843,9 +1795,7 @@ function generateSchedules() {
     return [makeShift(dayIdx, startH, MAX_SHIFT)];
   }
 
-  // ---- Build base schedule ----
   function buildBase(rules) {
-    // allowedDays is already the resolved list (after EFFECTIVE_DAYS filtering)
     const allowed = rules.allowedDays !== undefined ? rules.allowedDays : [0,1,2,3,4,5,6];
     let schedule = [];
     allowed.forEach(dayIdx => {
@@ -1856,21 +1806,17 @@ function generateSchedules() {
     return schedule;
   }
 
-  // ---- Extend schedule until goal reached ----
-  // STRICT: only add days that are in rules.allowedDays — never go outside the user's selection
   function extendToGoal(schedule, rules) {
     let s = [...schedule];
     if (meetsGoal(s)) return s;
 
     const allowed = rules.allowedDays !== undefined ? rules.allowedDays : [0,1,2,3,4,5,6];
 
-    // Step 1: add unused days — only from allowedDays, sorted by pay potential (fri/sat first)
     const usedDays = () => new Set(s.map(x => x.dayIdx));
     const candidates = [...allowed]
       .filter(d => !(rules.noSat && d === 6))
       .filter(d => !(!p.includeSat && d === 6))
       .sort((a, b) => {
-        // Sort by pay potential desc
         const sh = startHourFor(a, rules);
         const pa = calcShiftPay(weekDates[a].dateStr, sh, addHours(sh, MAX_SHIFT)).total;
         const pb = calcShiftPay(weekDates[b].dateStr, startHourFor(b, rules), addHours(startHourFor(b, rules), MAX_SHIFT)).total;
@@ -1883,7 +1829,6 @@ function generateSchedules() {
       s.push(...dayEntries(d, rules, false));
     }
 
-    // Step 2: upgrade single-shift days to split shifts (still within allowedDays only)
     if (!meetsGoal(s)) {
       const singleDays = [...new Set(
         s.filter(x => !x.isSplitFirst && !x.isSplitSecond).map(x => x.dayIdx)
@@ -1901,7 +1846,6 @@ function generateSchedules() {
       }
     }
 
-    // Step 3: add extra hours on split days if still short (still within allowedDays)
     if (!meetsGoal(s) && MAX_DAY > SPLIT_TOTAL) {
       const splitDays = [...new Set(s.filter(x=>x.isSplitFirst).map(x=>x.dayIdx))];
       for (const d of splitDays) {
@@ -1918,11 +1862,7 @@ function generateSchedules() {
     return s.sort((a,b) => a.dayIdx - b.dayIdx || a.start.localeCompare(b.start));
   }
 
-  // ---- Render week table — only shows days in allowedDays (+ their empty slots), not all 7 ----
   function renderWeekTable(schedule, allowedDays) {
-    // Determine which days to show rows for:
-    // If allowedDays is provided → show exactly those days (in Sun–Sat order)
-    // Otherwise → show all 7
     const daysToShow = allowedDays
       ? [0,1,2,3,4,5,6].filter(d => allowedDays.includes(d))
       : [0,1,2,3,4,5,6];
@@ -1957,13 +1897,11 @@ function generateSchedules() {
     }).join('');
   }
 
-  // ---- Helper: get final allowed days for a scenario ----
   function resolveDays(scenarioDays) {
     if (EFFECTIVE_DAYS === null) return scenarioDays;
     return EFFECTIVE_DAYS.filter(d => scenarioDays.includes(d));
   }
 
-  // ---- 5 scenarios (fastest is separate button only) ----
   const ALL7    = [0,1,2,3,4,5,6];
   const NO_SAT  = [0,1,2,3,4,5];
   const WEEKDAYS = [0,1,2,3,4];
@@ -2021,9 +1959,8 @@ function generateSchedules() {
   ];
 
   const results = [];
-  scenarios.forEach((sc, idx) => {
+  scenarios.forEach((sc) => {
     if (sc.key === 'split' && !p.allowSplitShift) return;
-    // deepnight scenario is already gated by allowDeepNight in scenarios array
 
     const base     = buildBase(sc.rules);
     const extended = extendToGoal(base, sc.rules);
@@ -2039,18 +1976,16 @@ function generateSchedules() {
 
     if (!meetsGoal(extended)) return;
 
-    const weekTable = renderWeekTable(extended, sc.rules._fastest ? null : sc.rules.allowedDays);
+    const weekTable = renderWeekTable(extended, sc.rules.allowedDays);
     const encoded   = encodeURIComponent(JSON.stringify(extended));
 
-    const isFastest = false;
     const cardStyle = results.length===0 ? 'border:2px solid var(--green)' : '';
 
     results.push(`<div class="gen-result-card" style="${cardStyle}">
       <div class="gen-header">
         <div class="gen-title">${sc.label}</div>
-        <div class="gen-badge" style="${isFastest?'background:#fff7ed;color:#c2410c':''}">${sc.badge}</div>
+        <div class="gen-badge">${sc.badge}</div>
       </div>
-      ${isFastest ? `<div style="margin:0 16px 8px;font-size:11px;color:#c2410c;background:#fff7ed;padding:6px 10px;border-radius:8px;font-weight:600">⚡ מחושב ללא סינונים — כולל שישי/שבת ולילות</div>` : ''}
       <div class="gen-body">
         <div style="margin-bottom:10px">${weekTable}</div>
         <div class="gen-stats-row">
@@ -2059,13 +1994,12 @@ function generateSchedules() {
           <div class="gen-stat-box"><div class="g-val">${fmt(monthEst)} ₪</div><div class="g-lbl">הערכה חודשית</div></div>
           <div class="gen-stat-box"><div class="g-val">${fmtH(avgPerSeg)}</div><div class="g-lbl">שעות/משמרת</div></div>
         </div>
-        <div class="gen-diff over" style="${isFastest?'background:#fff7ed;color:#c2410c':''}">✅ עובר את היעד ב־${fmt(diff)} ₪ · ${uniqueDays} ימי עבודה · ${shiftSegs} משמרות</div>
+        <div class="gen-diff over">✅ עובר את היעד ב־${fmt(diff)} ₪ · ${uniqueDays} ימי עבודה · ${shiftSegs} משמרות</div>
       </div>
     </div>
-    <button class="gen-add-btn" style="${isFastest?'background:#fff7ed;color:#c2410c':''}" onclick="addGenToJournal('${encoded}')">+ הוסף ליומן</button>`);
+    <button class="gen-add-btn" onclick="addGenToJournal('${encoded}')">+ הוסף ליומן</button>`);
   });
 
-  // ---- Active filter label ----
   let filterLabel = '';
   if (p.preferredDays.length > 0) {
     filterLabel = `<div style="margin:0 16px 10px;font-size:12px;font-weight:600;color:var(--green-dark);background:var(--green-light);padding:8px 12px;border-radius:10px">
@@ -2089,12 +2023,9 @@ function generateSchedules() {
   document.getElementById('genResults').scrollIntoView({ behavior: 'smooth' });
 }
 
-// ---- Shared "fastest" algorithm — tries ALL start hours, picks highest pay/hour ----
 function buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, totalWeekPay, monthGoal, MAX_SHIFT, MAX_DAY, SPLIT_LEG) {
-  // For each day, compute the best single shift (highest total pay possible)
-  // by trying all possible start hours and picking the best
   const startOptions = ['01:00','19:00','20:00','21:00','22:00','23:00','18:00','00:00','13:00','07:00'];
-  const dayOrder = [5, 6, 4, 3, 2, 1, 0]; // fri, sat, thu, wed, tue, mon, sun
+  const dayOrder = [5, 6, 4, 3, 2, 1, 0];
 
   function bestShiftForDay(dayIdx) {
     let best = null;
@@ -2107,20 +2038,17 @@ function buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, to
 
   let schedule = [];
 
-  // Step 1: Add best single shift per day
   for (const d of dayOrder) {
     if (meetsGoal(schedule)) break;
     schedule.push(bestShiftForDay(d));
   }
 
-  // Step 2: upgrade each day to split (add best secondary slot)
   if (!meetsGoal(schedule)) {
     for (const d of dayOrder) {
       if (meetsGoal(schedule)) break;
       const existing = schedule.filter(s => s.dayIdx === d);
-      const usedHrs  = existing.reduce((a,s) => a + s.hours, 0);
+      const usedHrs   = existing.reduce((a,s) => a + s.hours, 0);
       if (usedHrs + SPLIT_LEG <= MAX_DAY) {
-        // Find best secondary slot that doesn't overlap existing
         const existingRanges = existing.map(s => ({ s: timeToMins(s.start), e: timeToMins(s.end) <= timeToMins(s.start) ? timeToMins(s.end)+24*60 : timeToMins(s.end) }));
         let bestExtra = null;
         for (const h of startOptions) {
@@ -2142,7 +2070,6 @@ function buildFastestSchedule(weekDates, makeShift, makeSplitPair, meetsGoal, to
   return schedule.sort((a,b) => a.dayIdx - b.dayIdx || a.start.localeCompare(b.start));
 }
 
-// ---- Standalone "fastest" button handler ----
 function generateFastest() {
   save(); sbSaveProfile();
   const p = state.genPrefs;
@@ -2178,12 +2105,10 @@ function generateFastest() {
   const wPay  = totalPay(schedule);
   const wHrs  = schedule.reduce((a,s)=>a+s.hours,0);
   const monthEst = wPay * 4.33;
-  const diff  = monthEst - monthGoal;
   const uniqueDays = new Set(schedule.map(s=>s.dayIdx)).size;
   const shiftSegs  = schedule.length;
   const avgPerSeg  = shiftSegs > 0 ? wHrs / shiftSegs : 0;
 
-  // Render week table — fastest shows only working days (no empty rows)
   const activeDayIdxs = [...new Set(schedule.map(s=>s.dayIdx))].sort((a,b)=>a-b);
   const weekTable = activeDayIdxs.map(dayIdx => {
     const entries = schedule.filter(s=>s.dayIdx===dayIdx).sort((a,b)=>a.start.localeCompare(b.start));
@@ -2254,7 +2179,7 @@ async function addGenToJournal(encoded) {
       const exists = state.shifts.some(x=>x.date===s.dateStr&&x.start===s.start&&x.end===s.end);
       if(!exists) {
         const label = s.isSplitFirst ? ' (מפוצל – בוקר)' : s.isSplitSecond ? ' (מפוצל – ערב)' : '';
-        const ns = { id: Date.now().toString()+Math.random(), date: s.dateStr, start: s.start, end: s.end, note: 'מחולל' + label };
+        const ns = { id: Date.now().toString()+Math.random(), date: s.dateStr, start: s.start, end: s.end, note: 'מחולל' + label, asFriday: s.asFriday || isFridayOrSat(s.dateStr) };
         await sbAddShift(ns);
         state.shifts.unshift(ns);
         added++;
