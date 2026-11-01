@@ -766,7 +766,37 @@ async function sbInit() {
   }
 }
 
+function lsSaveProfile() {
+  try {
+    localStorage.setItem('mishmarot_profile', JSON.stringify({
+      userName:        state.userName,
+      avatar:          state.avatar,
+      monthlyGoal:     state.monthlyGoal,
+      weeklyHoursGoal: state.weeklyHoursGoal,
+      genPrefs:        state.genPrefs,
+      rates:           state.rates
+    }));
+  } catch(e) { console.error('lsSaveProfile:', e); }
+}
+
+function lsLoadProfile() {
+  try {
+    const raw = localStorage.getItem('mishmarot_profile');
+    if (!raw) return false;
+    const p = JSON.parse(raw);
+    if (p.userName        !== undefined) state.userName        = p.userName;
+    if (p.avatar          !== undefined) state.avatar          = p.avatar;
+    if (p.monthlyGoal     !== undefined) state.monthlyGoal     = p.monthlyGoal;
+    if (p.weeklyHoursGoal !== undefined) state.weeklyHoursGoal = p.weeklyHoursGoal;
+    if (p.genPrefs && Object.keys(p.genPrefs).length) Object.assign(state.genPrefs, p.genPrefs);
+    if (p.rates && p.rates.length) state.rates = p.rates;
+    return true;
+  } catch(e) { return false; }
+}
+
 async function sbSaveProfile() {
+  // Always save to localStorage as fallback
+  lsSaveProfile();
   if (!_sbReady()) return;
   try {
     const { error } = await _db.from('profiles').upsert({
@@ -783,8 +813,10 @@ async function sbSaveProfile() {
 }
 
 async function sbLoad() {
-  if (!_sbReady()) return;
   state.isLoading = true;
+  // Load from localStorage first (fast, always available)
+  lsLoadProfile();
+  if (!_sbReady()) return;
   try {
     const { data: prof, error: e1 } = await _db.from('profiles').select('*').eq('id', PROFILE_ID).maybeSingle();
     if (e1) throw e1;
