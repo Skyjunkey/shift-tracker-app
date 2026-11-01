@@ -2230,16 +2230,18 @@ function renderSettings() {
       <input type="file" id="avatarInput" accept="image/*" onchange="uploadAvatar(event)">
       <div class="field">
         <label>שם משתמש</label>
-        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value;sbSaveProfile()">
+        <input type="text" id="settingsName" value="${state.userName}" oninput="state.userName=this.value">
       </div>
       <div class="field">
         <label>יעד שכר חודשי (₪)</label>
-        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0;sbSaveProfile()">
+        <input type="number" id="settingsGoal" value="${state.monthlyGoal}" oninput="state.monthlyGoal=parseFloat(this.value)||0">
       </div>
       <div class="field">
         <label>יעד שעות שבועיות</label>
-        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15;sbSaveProfile()">
+        <input type="number" id="settingsWeekHours" value="${state.weeklyHoursGoal||15}" min="1" max="80" oninput="state.weeklyHoursGoal=parseFloat(this.value)||15">
       </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:12px" onclick="saveProfileSettings()">💾 שמור הגדרות</button>
+      <div id="settingsSavedMsg" style="display:none;text-align:center;color:var(--green);margin-top:8px;font-weight:600">✅ נשמר בהצלחה</div>
     </div>
 
     <div class="card">
@@ -2258,6 +2260,12 @@ function uploadAvatar(e) {
   const r = new FileReader();
   r.onload = async ev => { state.avatar=ev.target.result; await sbSaveProfile(); renderSettings(); };
   r.readAsDataURL(file);
+}
+
+async function saveProfileSettings() {
+  await sbSaveProfile();
+  const msg = document.getElementById('settingsSavedMsg');
+  if (msg) { msg.style.display='block'; setTimeout(()=>msg.style.display='none', 2000); }
 }
 
 function openAddRate() {
